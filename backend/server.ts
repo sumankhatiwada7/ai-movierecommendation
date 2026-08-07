@@ -1,0 +1,36 @@
+import "dotenv/config";
+import env from "dotenv"
+import express from 'express';
+import cors from 'cors';
+import authroute from '././src/module/auth/auth.route'
+env.config();
+const app = express();
+const port = Number(process.env.PORT ?? process.env.port ?? 5000);
+const clientUrl = process.env.CLIENT_URL ?? process.env.client_url;
+
+app.use(cors({
+    origin: clientUrl,
+    credentials: true,
+}))
+
+app.get('/', (req, res) => {
+    res.send('Backend is running!');
+});
+app.use("/api/v1/auth",authroute);
+
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Backend is running' });
+});
+
+
+async function startserver() {
+    try {
+        app.listen(port, async () => {
+            console.log(`Server is running on port ${port}`);
+        })
+    } catch (error) {
+        console.error("Error starting the server:", error);
+    }
+}
+
+startserver();
