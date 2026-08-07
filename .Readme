@@ -1,0 +1,189 @@
+# AI Movie Recommendation System
+
+An AI-powered movie recommendation platform built as a semester project. The system is split into two independent repositories: a PERN (PostgreSQL, Express, React, Node.js) web application and a Python/FastAPI machine learning microservice that serves personalized movie recommendations.
+
+> Replace the placeholder repo links, team names, and screenshots below with your actual project details before submission.
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Repositories](#repositories)
+- [Tech Stack](#tech-stack)
+- [Features](#features)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Web App Setup (PERN)](#web-app-setup-pern)
+  - [ML Service Setup (FastAPI)](#ml-service-setup-fastapi)
+- [Environment Variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [API Overview](#api-overview)
+- [Team](#team)
+- [License](#license)
+
+## Architecture
+
+The web app and the ML service are deployed and versioned independently, and communicate over HTTP. The React frontend never talks to the ML service directly — all requests go through the Express backend, which enriches ML predictions with data from PostgreSQL.
+
+```
+┌─────────────┐        ┌──────────────────────┐        ┌──────────────────────┐
+│   React     │  HTTP  │  Express + TS API    │  HTTP  │   FastAPI ML Service  │
+│  (frontend) │ ─────► │  (auth, movies, DB)   │ ─────► │  (recommendation model)│
+└─────────────┘        └──────────┬───────────┘        └──────────────────────┘
+                                   │
+                                   ▼
+                            ┌─────────────┐
+                            │ PostgreSQL  │
+                            │  (Prisma)   │
+                            └─────────────┘
+```
+
+- **React** — handles UI, auth state (Zustand + Context), and calls only the Express API.
+- **Express/Node/TypeScript** — single source of truth for auth, business logic, and Postgres access via Prisma. Calls the FastAPI service internally to get recommendations, then enriches results with movie metadata from the database.
+- **FastAPI** — stateless prediction service. Loads the trained model once at startup and exposes a `/recommend` endpoint. Has no direct knowledge of users, auth, or the frontend.
+- **PostgreSQL** — stores users, movies, ratings, and watch history. Accessed only through the Express backend via Prisma ORM.
+
+## Repositories
+
+| Repo | Description | Link |
+|---|---|---|
+| `pern-movie-app` | React + Express + TypeScript + PostgreSQL (Prisma) web application | `<add repo link>` |
+| `movie-ml-service` | FastAPI microservice serving the recommendation model | `<add repo link>` |
+
+Each repo has its own README with setup details specific to that service — this document covers the project as a whole and how the two pieces fit together.
+
+## Tech Stack
+
+**Frontend**
+- React (Vite)
+- TypeScript
+- Zustand (state management)
+- React Context (auth)
+- React Router
+- React Hook Form + Zod (form validation)
+- Tailwind CSS
+
+**Backend**
+- Node.js + Express
+- TypeScript
+- Prisma ORM
+- PostgreSQL
+- JWT (access + refresh tokens, with rotation)
+- bcrypt (password hashing)
+- Zod (request validation)
+
+**ML Service**
+- Python
+- FastAPI
+- Pydantic
+- `<add ML libraries once finalized, e.g. scikit-learn / pandas / surprise>`
+
+## Features
+
+**Implemented**
+- User registration and login (email + password)
+- Role-based access control (`user`, `admin`)
+- JWT access tokens (short-lived) + refresh tokens (rotated, stored hashed in DB, revocable)
+- Refresh token reuse detection (auto-revokes all sessions on suspected compromise)
+- Persistent sessions across page reloads via httpOnly refresh cookie
+- Auth state management via Zustand, exposed through a clean `AuthContext` / `useAuth()` hook
+
+**Planned**
+- Movie catalog browsing and search
+- Ratings and watch history tracking
+- Personalized recommendations via the FastAPI ML service
+- Admin dashboard for managing the movie catalog
+- Recommendation feedback loop (thumbs up/down to improve suggestions)
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Python 3.10+
+- PostgreSQL 14+
+- npm or yarn
+- pip / a Python virtual environment tool
+
+### Web App Setup (PERN)
+
+```bash
+git clone <pern-repo-link>
+cd pern-movie-app
+
+# Backend
+cd backend
+npm install
+cp .env.example .env   # fill in DATABASE_URL, JWT secrets, ML_SERVICE_URL
+npx prisma migrate dev
+npm run dev             # runs on http://localhost:5000
+
+# Frontend (in a separate terminal)
+cd ../frontend
+npm install
+cp .env.example .env    # fill in VITE_API_URL
+npm run dev              # runs on http://localhost:3000
+```
+
+### ML Service Setup (FastAPI)
+
+```bash
+git clone <ml-repo-link>
+cd movie-ml-service
+
+python -m venv venv
+source venv/bin/activate      # on Windows: venv\Scripts\activate
+
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000   # runs on http://localhost:8000
+```
+
+Once both services are running, visit `http://localhost:3000` for the web app. The FastAPI service's interactive docs are available at `http://localhost:8000/docs`.
+
+## Environment Variables
+
+**Backend (`backend/.env`)**
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/movie_app
+JWT_ACCESS_SECRET=<long random string>
+JWT_REFRESH_SECRET=<different long random string>
+ACCESS_TOKEN_EXPIRY=15m
+REFRESH_TOKEN_EXPIRY_DAYS=30
+ML_SERVICE_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:3000
+NODE_ENV=development
+```
+
+**Frontend (`frontend/.env`)**
+```
+VITE_API_URL=http://localhost:5000/api
+```
+
+**ML Service (`movie-ml-service/.env`)**
+```
+<add any config the model needs, e.g. MODEL_PATH, DATABASE_URL if it needs read access>
+```
+
+
+## API Overview
+
+**Auth (Express)**
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Create a new account |
+| POST | `/api/auth/login` | Log in and receive tokens |
+| POST | `/api/auth/refresh` | Rotate refresh token, issue new access token |
+| POST | `/api/auth/logout` | Revoke refresh token and clear session |
+
+**Recommendations (FastAPI, called internally by Express)**
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/recommend` | Returns top-K recommended movie IDs for a user |
+
+Full request/response contracts are documented in each repo, and via FastAPI's auto-generated docs at `/docs`.
+
+
+## License
+
+This project was built for academic purposes as part of a university semester project at KIST College.
