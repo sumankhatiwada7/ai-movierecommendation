@@ -2,7 +2,6 @@
 
 An AI-powered movie recommendation platform built as a semester project. The system is split into two independent repositories: a PERN (PostgreSQL, Express, React, Node.js) web application and a Python/FastAPI machine learning microservice that serves personalized movie recommendations.
 
-> Replace the placeholder repo links, team names, and screenshots below with your actual project details before submission.
 
 ## Table of Contents
 
