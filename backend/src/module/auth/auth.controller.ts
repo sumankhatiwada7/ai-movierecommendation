@@ -1,13 +1,14 @@
-import { prisma } from "../../core/database/prisma.js";
+import { prisma } from "../../core/database/prisma";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
-import  type  { userrequest } from "./auth.type.js";
+import  type  { userrequest } from "./auth.type";
 import  type  { Request,Response } from "express";
-import type{error} from "./auth.type.js";
-import type { userresponse,loginrequest,loginresponse } from "./auth.type.js";
-import type { userapiresponse } from "./auth.type.js";
-import {generateAccessToken,generateRefreshToken,verfiyrefreshToken} from "../../core/jwt/token.js"
-import { AuthService } from "./auth.service.js";
+import type{error} from "./auth.type";
+import type { userresponse,loginrequest,loginresponse } from "./auth.type";
+import type { userapiresponse } from "./auth.type";
+import type { userrole } from "@prisma/client";
+import {generateAccessToken,generateRefreshToken,verfiyrefreshToken} from "../../core/jwt/token"
+import { AuthService } from "./auth.service";
 
 function hashpassword(password: string): Promise<string> {
     return  bcrypt.hash(password, 10);
@@ -19,7 +20,7 @@ export async function register(req: Request, res: Response){
     const name = data.name;
     const email = data.email;
     const password = data.password;
-    const role = data.role||"user";
+    const role: userrole = data.role === "admin" ? "admin" : "user";
     const errors: NonNullable<error<string>["errors"]> = [];
     const emailregix="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
 
@@ -59,6 +60,7 @@ export async function register(req: Request, res: Response){
 
 }
 catch(error){
+    console.error("Register failed:", error);
     const payload={
         message:"Internal server error",
         sucess:false
@@ -83,6 +85,7 @@ export async function login (req:Request,res:Response){
             errors,
             message:"validation failed"
         }
+        return res.status(400).json(payload)
     }
     const existinguser= await new AuthService().findUserByEmail(email);
     if(!existinguser){
@@ -91,6 +94,7 @@ export async function login (req:Request,res:Response){
             sucess:false
 
         }
+        return res.status(404).json(payload)
     }
    const matchpassword=  await bcrypt.compare(password,existinguser.password);
    if(!matchpassword){
@@ -100,10 +104,14 @@ export async function login (req:Request,res:Response){
     }
     return res.status(400).json(payload)
 }
-    const accesstoken = generateAccessToken(existinguser.id,existinguser.email,existinguser.role);
-   const refreshtoken = generateRefreshToken(existinguser.id,existinguser.email,existinguser.role);
-   existinguser.refreshtoken=refreshtoken;
-     await prisma.user.save(existinguser);
+    const tokenPayload = {
+        id: existinguser.id,
+        email: existinguser.email,
+        role: existinguser.role,
+    };
+    const accesstoken = generateAccessToken(tokenPayload);
+   const refreshtoken = generateRefreshToken(tokenPayload);
+         await new AuthService().updateRefreshToken(existinguser.id, refreshtoken);
      res.cookie("refreshtoken",refreshtoken,{
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -128,7 +136,7 @@ export async function login (req:Request,res:Response){
 
 export async function refresh(req:Request,res:Response){
     try{
-    const token =req.cookies.refreshtoken;
+    const token =req.cookies?.refreshtoken;
     if(!token){
         const payload:userapiresponse={
             message:"Refresh token is missing",
@@ -153,7 +161,11 @@ export async function refresh(req:Request,res:Response){
     }
     return res.status(404).json(payload);
     }
-    const newaccesstoken = generateAccessToken(user.id,user.email,user.role);
+    const newaccesstoken = generateAccessToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+    });
     const payload:loginresponse<typeof newaccesstoken> = {
         message:"Access token refreshed successfully",
         sucess:true,

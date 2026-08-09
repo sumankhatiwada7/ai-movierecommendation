@@ -1,4 +1,5 @@
-import {prisma} from "../../core/database/prisma.js";
+import {prisma} from "../../core/database/prisma";
+import type { userrole } from "@prisma/client";
 
 export class AuthService {
   
@@ -18,15 +19,27 @@ async findUserById(id: string) {
     })
 }
 
-async createUser(name: string, email: string, password: string, role: string) {
+async createUser(name: string, email: string, password: string, role: userrole) {
     return await prisma.user.create({
         data:{
             name:name,
             email:email,
             password:password,
-            role:role
+            role:role,
+            refreshtoken: ""
         }
     })
+}
+
+async updateRefreshToken(id: string, refreshtoken: string) {
+    return await prisma.user.update({
+        where: {
+            id,
+        },
+        data: {
+            refreshtoken,
+        },
+    });
 }
 
 }

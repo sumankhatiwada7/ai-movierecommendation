@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import { verfiyaccessToken } from "../../core/jwt/token.js";
+import { verfiyaccessToken } from "../../core/jwt/token";
 
 export interface AuthenticatedRequest extends Request {
     user?: {
@@ -9,13 +9,18 @@ export interface AuthenticatedRequest extends Request {
         role: string;
     };
 }
+export type roleresponse={
+    message:string;
+    sucess:boolean;
+}
+
 
 export type tokenerror={
     message:string;
     sucess:boolean;
 }
 
-export function middleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try{
     const authheader= req.headers.authorization;
     if(!authheader || !authheader.startsWith('Bearer ')){
@@ -55,4 +60,26 @@ catch(error){
 }
 return res.status(500).json(payload);
 }
+}
+
+export function authorize(roles: string[]) {
+    return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user || !roles.includes(req.user.role)) {
+                const payload: roleresponse = {
+                    message: "Forbidden: You don't have permission to access this resource",
+                    sucess: false
+                };
+                return res.status(403).json(payload);
+            }
+
+            return next();
+        } catch (error) {
+            const payload: roleresponse = {
+                message: "Internal server error",
+                sucess: false
+            };
+            return res.status(500).json(payload);
+        }
+    };
 }

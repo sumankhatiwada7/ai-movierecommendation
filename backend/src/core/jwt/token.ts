@@ -24,15 +24,16 @@ if(!refreshtoken){
 const access:jwt.Secret = accesstoken;
 const refresh:jwt.Secret = refreshtoken;
 
-export const generateAccessToken = (payload: TokenPayload, email: any, role: any): string => {
+export const generateAccessToken = (payload: TokenPayload): string => {
     const options: jwt.SignOptions = {};
     if (accesstoken_expiresin !== undefined) options.expiresIn = accesstoken_expiresin;
-    return jwt.sign(payload as string | object | Buffer, access, options);
+    return jwt.sign(payload, access, options);
 }
-export const generateRefreshToken = (payload: TokenPayload, email: any, role: any): string => {
+
+export const generateRefreshToken = (payload: TokenPayload): string => {
     const options: jwt.SignOptions = {};
     if (refreshtoken_expiresin !== undefined) options.expiresIn = refreshtoken_expiresin;
-    return jwt.sign(payload as string | object | Buffer, refresh, options);
+    return jwt.sign(payload, refresh, options);
 }
 export const verfiyrefreshToken = (token: string): TokenPayload | null => {
     try{

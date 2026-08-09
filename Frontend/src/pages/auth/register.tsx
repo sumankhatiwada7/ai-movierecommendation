@@ -24,6 +24,7 @@ export const Register = () => {
         setError("");
         if (form.password !== form.confirmpassword){
             setError("Password and Confirm Password do not match");
+            return;
 
         }
          setloading(true);
