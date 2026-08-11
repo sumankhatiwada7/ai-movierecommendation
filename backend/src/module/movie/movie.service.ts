@@ -3,7 +3,10 @@ import type { movierequest } from './movie.type'
 
 
 export class MovieService{
-    async findall(page: number, limit: number, search?: string, genreId?: number){
+    getOrCacheByTmdbId(tmdbId: number): any {
+        throw new Error("Method not implemented.");
+    }
+    async findall(page: number, limit: number, search?: string, genreId?: string){
         const where={
             AND:[
                 search?{ title: { contains: search, mode: 'insensitive' as const  } }: {},
@@ -33,7 +36,7 @@ export class MovieService{
     }
 
     // modules/movie/movie.service.ts
-async create(data: movierequest) {
+async create(data: movierequest & { tmdbId: number }) {
     const { genreIds, ...rest } = data;
     return prisma.movie.create({
         data: {
