@@ -1,6 +1,6 @@
 import {api} from './axios'
 
-import type{Movie,Pagination,MovieListResponse,MovieResponse,ListMoviesParams} from '../type/movie.type'
+import type{Movie,MovieListResponse,MovieResponse,ListMoviesParams} from '../type/movie.type'
 
 
 

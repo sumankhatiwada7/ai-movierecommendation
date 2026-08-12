@@ -41,5 +41,15 @@ async updateRefreshToken(id: string, refreshtoken: string) {
         },
     });
 }
+async removeRefreshToken(id: string) {
+    return await prisma.user.update({
+        where: {
+            id,
+        },
+        data: {
+            refreshtoken: "",
+        },
+    });
+}
 
 }

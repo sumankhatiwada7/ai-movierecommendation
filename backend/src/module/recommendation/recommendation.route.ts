@@ -4,8 +4,8 @@ import{recommendation,similarMovies} from "./recommendation.controller";
 
 const router = Router();
 
-router.get('/recommendation/:userId', authenticate, recommendation);
-router.get('/recommendation/similar/:movieId', authenticate, similarMovies);
+router.get('/:userId', authenticate, recommendation);
+router.get('/similar/:movieId', authenticate, similarMovies);
 
 
 export default router;

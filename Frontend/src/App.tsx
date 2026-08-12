@@ -1,37 +1,79 @@
-// frontend/src/App.tsx — now much simpler, no manual refresh logic here
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Login from "./pages/auth/login";
 import Register from "./pages/auth/register";
 import Homepage from "./pages/homepage/movie/homepage";
 import Moviedetail from "./pages/homepage/movie/moviedetail";
+import BrowseMovies from "./pages/homepage/movie/BrowseMovies";
+import Navbar from "./pages/homepage/movie/components/Navbar";
 
 import ProtectedRoute from "./route/protectedroute";
 import { useAuth } from "./hooks/useauth";
 
-function App() {
-  const { isLoading } = useAuth() as any;
+function AppRoutes() {
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (loading) return <div className="p-8 text-center">Loading...</div>;
+
+  if (user && (location.pathname === "/login" || location.pathname === "/register")) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
-    <BrowserRouter>
+    <div className="min-h-screen bg-gray-950 text-white">
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route
+          path="/login"
+          element={user ? <Navigate to="/" replace /> : <Login />}
+        />
+        <Route
+          path="/register"
+          element={user ? <Navigate to="/" replace /> : <Register />}
+        />
         <Route
           path="/"
           element={
             <ProtectedRoute>
-              <Homepage />
+              <>
+                <Navbar />
+                <Homepage />
+              </>
             </ProtectedRoute>
           }
         />
-        <Route path="/movies/:id" element={
-          <ProtectedRoute>
-            <Moviedetail />
-          </ProtectedRoute>
-        } />
+        <Route
+          path="/movies/:id"
+          element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <Moviedetail />
+              </>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/browse"
+          element={
+            user ? (
+              <>
+                <Navbar />
+                <BrowseMovies />
+              </>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
       </Routes>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

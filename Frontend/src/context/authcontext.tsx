@@ -37,9 +37,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (data: LoginData) => {
     const response = await loginApi(data);
+    const nextAccessToken = response.accessToken ?? response.token ?? null;
 
-    setUser(response.user);
-    setAccessToken(response.accessToken);
+    setUser(response.user ?? null);
+    setAccessToken(nextAccessToken);
   };
  
 
@@ -53,9 +54,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initializeAuth = async () => {
       try {
         const response = await refresh();
+        const nextAccessToken = response.accessToken ?? response.token ?? null;
 
-        setUser(response.user);
-        setAccessToken(response.accessToken);
+        setUser(response.user ?? null);
+        setAccessToken(nextAccessToken);
       } catch {
         setUser(null);
         setAccessToken(null);

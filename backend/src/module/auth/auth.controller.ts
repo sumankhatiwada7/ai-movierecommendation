@@ -118,10 +118,16 @@ export async function login (req:Request,res:Response){
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
      })
-     const payload:loginresponse<typeof accesstoken> = {
+     const payload:loginresponse<typeof accesstoken> & { user: { id: string; name: string; email: string; role: string } } = {
         message:"Login successful",
         sucess:true,
-        token:accesstoken
+        token:accesstoken,
+        user: {
+            id: existinguser.id,
+            name: existinguser.name,
+            email: existinguser.email,
+            role: existinguser.role,
+        }
      }
     return res.status(200).json(payload);
     }
@@ -166,10 +172,16 @@ export async function refresh(req:Request,res:Response){
         email: user.email,
         role: user.role,
     });
-    const payload:loginresponse<typeof newaccesstoken> = {
+    const payload:loginresponse<typeof newaccesstoken> & { user: { id: string; name: string; email: string; role: string } } = {
         message:"Access token refreshed successfully",
         sucess:true,
-        token:newaccesstoken
+        token:newaccesstoken,
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+        }
 
     }
     return res.status(200).json(payload);
@@ -182,5 +194,28 @@ export async function refresh(req:Request,res:Response){
     return res.status(500).json(payload);
 }
 
+}
+
+export async function logout(Req:Request,Res:Response){
+    try{
+    const token = Req.cookies?.refreshtoken;
+    if(!token){
+
+    }
+    await new AuthService().removeRefreshToken(token);
+    Res.clearCookie("refreshtoken");
+    const payload:userapiresponse={
+        message:"Logout successful",
+        sucess:true
+    }
+    return Res.status(200).json(payload);
+    }
+    catch(error){
+        const payload:userapiresponse={
+            message:"Internal server error",
+            sucess:false
+        }
+        return Res.status(500).json(payload);
+    }
 }
 

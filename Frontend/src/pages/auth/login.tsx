@@ -1,15 +1,17 @@
-import {useState, type ChangeEvent, type FormEvent} from "react";
+import {useEffect, useState, type ChangeEvent, type FormEvent} from "react";
 import { useNavigate } from "react-router-dom";
 import {useAuth} from "../../hooks/useauth";
 
-
-
-
-
-
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+      if (user) {
+        navigate("/", { replace: true });
+      }
+    }, [user, navigate]);
+
     const [form,setform]=useState({
         email:"",
         password:"",
@@ -31,7 +33,7 @@ export default function Login() {
         email:form.email,
         password:form.password
      })
-     navigate("/dashboard");
+     navigate("/");
     }catch(error: any){
       seterror(error?.response?.data?.message || "Registration failed.");
     
