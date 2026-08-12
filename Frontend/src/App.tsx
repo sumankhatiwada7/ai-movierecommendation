@@ -2,6 +2,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/auth/login";
 import Register from "./pages/auth/register";
+import Homepage from "./pages/homepage/movie/homepage";
+import Moviedetail from "./pages/homepage/movie/moviedetail";
+
 import ProtectedRoute from "./route/protectedroute";
 import { useAuth } from "./hooks/useauth";
 
@@ -19,10 +22,15 @@ function App() {
           path="/"
           element={
             <ProtectedRoute>
-              <div className="p-8">Home / Movie recommendations go here</div>
+              <Homepage />
             </ProtectedRoute>
           }
         />
+        <Route path="/movies/:id" element={
+          <ProtectedRoute>
+            <Moviedetail />
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
   );

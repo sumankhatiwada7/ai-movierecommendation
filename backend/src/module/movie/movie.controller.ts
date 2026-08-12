@@ -4,13 +4,14 @@ import { MovieService } from "./movie.service";
 
 export async function listMovies(req: Request, res: Response) {
     try {
-        const query = req.query as { page?: string; limit?: string; search?: string; genreId?: string };
+        const query = req.query as { page?: string; limit?: string; search?: string; genreId?: string; sortBy?: string };
         const page = Number(query.page) > 0 ? Number(query.page) : 1;
         const limit = Number(query.limit) > 0 && Number(query.limit) <= 50 ? Number(query.limit) : 20;
         const search = query.search;
-        const genreId = query.genreId ? Number(query.genreId) : undefined;
+        const genreId = query.genreId;
+        const sortBy = query.sortBy === "rating" ? "rating" : "latest";
 
-        const { movies, total } = await new MovieService().findall(page, limit, search, genreId);
+        const { movies, total } = await new MovieService().findall(page, limit, search, genreId, sortBy);
 
         const payload: movielistresponse<typeof movies[number]> = {
             message: "Movies fetched successfully",
@@ -35,7 +36,7 @@ export async function getMovieById(req: Request, res: Response) {
         const id = Number(req.params.id);
         if (isNaN(id)) {
             const payload: movieapiresponse = {
-                message: "Invalid movie id",
+                message: "Invalid movie id",    
                 sucess: false,
             };
             return res.status(400).json(payload);
@@ -73,6 +74,9 @@ export async function createMovie(req: Request, res: Response) {
         const errors: NonNullable<error<string>["errors"]> = [];
 
         if (!data.title) errors.push("Title is required");
+        if (typeof (data as movierequest & { tmdbId?: unknown }).tmdbId !== "number" || Number.isNaN((data as movierequest & { tmdbId?: unknown }).tmdbId)) {
+            errors.push("TMDB ID is required");
+        }
         if (data.releaseYear && (data.releaseYear < 1888 || data.releaseYear > new Date().getFullYear() + 1)) {
             errors.push("Release year is invalid");
         }
@@ -85,7 +89,7 @@ export async function createMovie(req: Request, res: Response) {
             return res.status(400).json(payload);
         }
 
-        const movie = await new MovieService().create(data);
+        const movie = await new MovieService().create(data as movierequest & { tmdbId: number });
         const payload: movieresponse<typeof movie> = {
             message: "Movie created successfully",
             sucess: true,

@@ -1,9 +1,11 @@
 import {authorize,authenticate} from "../auth/auth.middleware";
 import { Router } from "express";
-import{recommendation} from "./recommendation.controller";
+import{recommendation,similarMovies} from "./recommendation.controller";
 
 const router = Router();
 
-router.post('/', authenticate, recommendation);
+router.get('/recommendation/:userId', authenticate, recommendation);
+router.get('/recommendation/similar/:movieId', authenticate, similarMovies);
+
 
 export default router;

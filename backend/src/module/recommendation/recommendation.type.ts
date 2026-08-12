@@ -10,3 +10,4 @@ export interface recommendationapiResponse{
 export interface recommendationresponse <t> extends recommendationapiResponse{
     movies:t[];
 }
+

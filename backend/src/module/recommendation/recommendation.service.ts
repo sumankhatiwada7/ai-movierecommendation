@@ -43,4 +43,33 @@ export class RecommendationService{
             console.error(error);
         }
     }
+
+async getsimilarMovies(movieId:number,topk:10){
+        const movie = await prisma.movie.findUnique({
+        where: { id: movieId },
+        select: { tmdbId: true, genres: { select: { id: true } } },
+    });
+
+    if(!movie) {
+        throw new Error("Movie not found")
+    }
+    let mldata:mlResponse;
+
+    try{
+    const {data} = await axios.post<mlResponse>(
+        `${process.env.ML_API_URL}/similar`,
+        {tmdb_id: movie.tmdbId, topK: topk},
+        {timeout: 5000}
+    );
+    mldata = data;
+    const movieService= new MovieService();
+
+  const movies = await Promise.all(mldata.tmdb_ids.map((tmdbId) => movieService.getOrCacheByTmdbId(tmdbId)));   
+  return movies;
+    }
+    catch(error){
+         console.error("faild to load similar movie ");
+    }
+}
+
 }

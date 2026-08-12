@@ -24,3 +24,33 @@ export async function recommendation(Req:AuthenticatedRequest,Res:Response){
         return Res.status(500).json(payload);
     }
 }
+
+export async function similarMovies(Req:AuthenticatedRequest,Res:Response){
+    try{
+        const movieId= Number(Req.params.movieId);
+        if(isNaN(movieId)){
+            const payload:recommendationapiResponse={
+                message:"Invalid movie ID",
+                sucess:false
+            };
+            return Res.status(400).json(payload);
+        }
+        const movies = await new RecommendationService().getsimilarMovies(movieId,10);
+        const payload:recommendationresponse<NonNullable<typeof movies>[number]> = {
+            message:"Similar movies fetched successfully",
+            sucess:true,
+            movies:movies ?? []
+        };
+        return Res.status(200).json(payload);
+
+    }
+    catch(error){
+        console.error("error fetching similiar movie ", error);
+        const payload:recommendationapiResponse={
+            message:"Error fetching similiar movies",
+            sucess:false    
+        }
+        return Res.status(500).json(payload);
+    }
+
+}

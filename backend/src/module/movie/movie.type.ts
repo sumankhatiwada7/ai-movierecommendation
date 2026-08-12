@@ -1,12 +1,12 @@
 
 export interface movierequest {
     title: string;
-    description?: string;
-    releaseYear?: number;
-    durationMinutes?: number;
-    posterUrl?: string;
-    director?: string;
-    genreIds?: string[];
+    description?: string | undefined;
+    releaseYear?: number | undefined;
+    durationMinutes?: number | undefined;
+    posterUrl?: string | undefined;
+    director?: string | undefined;
+    genreIds?: string[] | undefined;
 }
 
 export interface moviequery {
@@ -14,6 +14,8 @@ export interface moviequery {
     limit?: string;
     search?: string;
     genreId?: string;
+    sortBy?: "latest" | "rating";
+
 }
 
 export interface error<T> {
