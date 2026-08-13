@@ -7,7 +7,7 @@ import { AuthenticatedRequest } from "../auth/auth.middleware";
 export async function recommendation(Req:AuthenticatedRequest,Res:Response){
     try{
     const userId = String(Req.user?.id);
-    const movies = await new RecommendationService().getrecommendations(userId,10);
+    const movies = await new RecommendationService().getRecommendationsForUser(userId,10);
     const payload:recommendationresponse<NonNullable<typeof movies>[number]> = {
         message:"Recommendations fetched successfully",
         sucess:true,
@@ -27,15 +27,15 @@ export async function recommendation(Req:AuthenticatedRequest,Res:Response){
 
 export async function similarMovies(Req:AuthenticatedRequest,Res:Response){
     try{
-        const movieId= Number(Req.params.movieId);
-        if(isNaN(movieId)){
+        const title= String(Req.query.title);
+        if(!title){
             const payload:recommendationapiResponse={
-                message:"Invalid movie ID",
+                message:"Invalid movie title",
                 sucess:false
             };
             return Res.status(400).json(payload);
         }
-        const movies = await new RecommendationService().getsimilarMovies(movieId,10);
+        const movies = await new RecommendationService().getSimilarMovies(title,10);
         const payload:recommendationresponse<NonNullable<typeof movies>[number]> = {
             message:"Similar movies fetched successfully",
             sucess:true,

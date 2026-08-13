@@ -118,10 +118,11 @@ export async function login (req:Request,res:Response){
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
      })
-     const payload:loginresponse<typeof accesstoken> & { user: { id: string; name: string; email: string; role: string } } = {
+     const payload:loginresponse<typeof accesstoken> & { accessToken: string; user: { id: string; name: string; email: string; role: string } } = {
         message:"Login successful",
         sucess:true,
         token:accesstoken,
+        accessToken: accesstoken,
         user: {
             id: existinguser.id,
             name: existinguser.name,
@@ -172,10 +173,11 @@ export async function refresh(req:Request,res:Response){
         email: user.email,
         role: user.role,
     });
-    const payload:loginresponse<typeof newaccesstoken> & { user: { id: string; name: string; email: string; role: string } } = {
+    const payload:loginresponse<typeof newaccesstoken> & { accessToken: string; user: { id: string; name: string; email: string; role: string } } = {
         message:"Access token refreshed successfully",
         sucess:true,
         token:newaccesstoken,
+        accessToken: newaccesstoken,
         user: {
             id: user.id,
             name: user.name,

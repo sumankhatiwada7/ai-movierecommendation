@@ -35,19 +35,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const persistAccessToken = (token: string | null) => {
+    setAccessToken(token);
+
+    if (token) {
+      localStorage.setItem("accessToken", token);
+      return;
+    }
+
+    localStorage.removeItem("accessToken");
+  };
+
   const login = async (data: LoginData) => {
     const response = await loginApi(data);
     const nextAccessToken = response.accessToken ?? response.token ?? null;
 
     setUser(response.user ?? null);
-    setAccessToken(nextAccessToken);
+    persistAccessToken(nextAccessToken);
   };
- 
 
   const logout = async () => {
     await logoutApi();
     setUser(null);
-    setAccessToken(null);
+    persistAccessToken(null);
   };
 
   useEffect(() => {
@@ -57,10 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const nextAccessToken = response.accessToken ?? response.token ?? null;
 
         setUser(response.user ?? null);
-        setAccessToken(nextAccessToken);
+        persistAccessToken(nextAccessToken);
       } catch {
         setUser(null);
-        setAccessToken(null);
+        persistAccessToken(null);
       } finally {
         setLoading(false);
       }

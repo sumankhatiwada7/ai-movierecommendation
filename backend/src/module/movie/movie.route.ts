@@ -1,15 +1,13 @@
 import {authorize,authenticate} from "../auth/auth.middleware";
 import { Router } from "express";
-import { listMovies, getMovieById, createMovie, updateMovie, deleteMovie } from "./movie.controller";
+import { listMovies, getMovieById, listGenres} from "./movie.controller";
 
 
 const router = Router();
 
-
-router.get("/", listMovies);
-router.get("/:id", getMovieById);
-router.post("/", authenticate, authorize(["admin"]), createMovie);
-router.put("/:id", authenticate, authorize(["admin"]), updateMovie);
-router.delete("/:id", authenticate, authorize(["admin"]), deleteMovie);
+router.get("/search", authenticate, listMovies);
+router.get("/", authenticate, listMovies);
+router.get("/genres", authenticate, listGenres);
+router.get("/:tmdbId", authenticate, getMovieById);
 
 export default router;

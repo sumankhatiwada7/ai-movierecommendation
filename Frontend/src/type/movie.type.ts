@@ -1,9 +1,9 @@
 export interface Genre {
-    id: string;
-    name: string;
-}
-export interface Movie {
   id: number;
+  name: string;
+}
+
+export interface Movie {
   tmdbId: number;
   title: string;
   description?: string;
@@ -15,14 +15,14 @@ export interface Movie {
   director?: string;
   averageRating: number;
   ratingCount: number;
-  genres: Genre[];
+  genres?: Genre[];      
+  genreIds?: number[];   
 }
 
 export interface Pagination {
   page: number;
-  limit: number;
-  total: number;
   totalPages: number;
+  totalResults: number;
 }
 
 export interface MovieListResponse {
@@ -38,10 +38,15 @@ export interface MovieResponse {
   movie: Movie;
 }
 
+export interface RecommendationResponse {
+  message: string;
+  sucess: boolean;
+  movies: Movie[];
+}
+
 export interface ListMoviesParams {
   page?: number;
-  limit?: number;
-  search?: string;
+   search?: string;
   genreId?: string;
   sortBy?: "latest" | "rating";
 
@@ -56,5 +61,5 @@ export interface recommendationresponse<T>{
     movies:T[];
 }
 export interface watchdata{
-    movieid:number
+    tmdbId:number
 }

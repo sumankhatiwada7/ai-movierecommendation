@@ -18,14 +18,14 @@ export default function HeroBanner({ movie }: { movie: Movie }) {
         <h1 className="text-4xl font-bold mb-3">{movie.title}</h1>
         <p className="text-sm text-gray-200 mb-4 line-clamp-3">{movie.description}</p>
         <div className="flex gap-3">
-          <button     
-            onClick={() => navigate(`/movies/${movie.id}`)}
+          <button
+            onClick={() => navigate(`/movies/${movie.tmdbId}`)}
             className="bg-white text-black px-6 py-2 rounded font-semibold"
           >
             ▶ Play
           </button>
           <button
-            onClick={() => navigate(`/movies/${movie.id}`)}
+            onClick={() => navigate(`/movies/${movie.tmdbId}`)}
             className="bg-gray-700/70 px-6 py-2 rounded font-semibold"
           >
             More Info

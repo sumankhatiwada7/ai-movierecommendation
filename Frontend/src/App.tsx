@@ -5,6 +5,7 @@ import Homepage from "./pages/homepage/movie/homepage";
 import Moviedetail from "./pages/homepage/movie/moviedetail";
 import BrowseMovies from "./pages/homepage/movie/BrowseMovies";
 import Navbar from "./pages/homepage/movie/components/Navbar";
+import SearchResults from "./pages/homepage/movie/SearchResults";
 
 import ProtectedRoute from "./route/protectedroute";
 import { useAuth } from "./hooks/useauth";
@@ -65,6 +66,7 @@ function AppRoutes() {
             )
           }
         />
+        <Route path="/search" element={<><Navbar /><SearchResults /></>} />
       </Routes>
     </div>
   );

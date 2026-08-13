@@ -5,7 +5,7 @@ import{logwatch} from "./watch.controller";
 
 const router = Router();
 
-router.post("/:movieId", authenticate, logwatch);
+router.post("/:tmdbId", authenticate, logwatch);
 
 export default router;
 

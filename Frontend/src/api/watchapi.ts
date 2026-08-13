@@ -2,8 +2,8 @@ import {api} from './axios'
 import type{watchdata} from "../type/movie.type"
 
 
-export const logwatch= async (data:watchdata)=>{
-    const response = await api.post(`/watch/${data.movieid}`);
+export const logwatch= async (tmdbId: number)=>{
+    const response = await api.post(`/watch/${tmdbId}`);
     return response.data;
 
 }

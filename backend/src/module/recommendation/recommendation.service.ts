@@ -1,75 +1,72 @@
-import { prisma } from "../../core/database/prisma";
-import type{mlResponse} from "./recommendation.type"
-import {MovieService} from "../movie/movie.service"
 import axios from "axios";
+import { prisma } from "../../core/database/prisma";
+import { TmdbService } from "../tmdb/tmdb.service";
 
-export class RecommendationService{
-
-    async  getrecommendations(userId:string,topK:10){
-        const watchedMovies  = await prisma.watchhistory.findMany({
-            where:{
-                userId
-            },
-            include:{
-                movie:{
-                    select:{
-                        tmdbId:true
-                    }
-                }
-            },
-            take:20
-        })
-        const watchedtmdbIds = watchedMovies.map(watch => watch.movie.tmdbId);
-        if(watchedtmdbIds.length===0){
-            return prisma.movie.findMany({
-                orderBy:{averageRating:"desc"},
-                take:topK,
-                include:{genres:true}
-
-            })
-        }
-        let mldata:mlResponse;
-        try{
-          const {data}= await axios.post<mlResponse>(
-            `${process.env.ML_API_URL}/recommendations`,
-            {tmdb_ids:watchedtmdbIds,topK},
-            {timeout:5000},
-          );
-          mldata=data;
-          const movieService = new MovieService();
-          const movies = await Promise.all(mldata.tmdb_ids.map((tmdbId) => movieService.getOrCacheByTmdbId(tmdbId)));        
-          return movies 
-        }catch(error){
-            console.error(error);
-        }
-    }
-
-async getsimilarMovies(movieId:number,topk:10){
-        const movie = await prisma.movie.findUnique({
-        where: { id: movieId },
-        select: { tmdbId: true, genres: { select: { id: true } } },
-    });
-
-    if(!movie) {
-        throw new Error("Movie not found")
-    }
-    let mldata:mlResponse;
-
-    try{
-    const {data} = await axios.post<mlResponse>(
-        `${process.env.ML_API_URL}/similar`,
-        {tmdb_id: movie.tmdbId, topK: topk},
-        {timeout: 5000}
-    );
-    mldata = data;
-    const movieService= new MovieService();
-
-  const movies = await Promise.all(mldata.tmdb_ids.map((tmdbId) => movieService.getOrCacheByTmdbId(tmdbId)));   
-  return movies;
-    }
-    catch(error){
-         console.error("faild to load similar movie ");
-    }
+interface mlListResponse {
+    titles: string[];
 }
 
+export class RecommendationService {
+    async getRecommendationsForUser(userId: string, topK = 10) {
+        const watched = await prisma.watchhistory.findMany({
+            where: { userId },
+            orderBy: { watchedAt: "desc" },
+            take: 50,
+        });
+        const watchedTitles = watched.map((w) => w.title);
+        const tmdb = new TmdbService();
+
+        if (watchedTitles.length === 0) {
+            const { movie:movies } = await tmdb.discoverMovies(1, undefined, "rating");
+            return movies.slice(0, topK);
+        }
+
+        let mlData: mlListResponse;
+        try {
+            const { data } = await axios.post<mlListResponse>(
+                `${process.env.ML_SERVICE_URL}/recommend`,
+                { titles: watchedTitles, top_k: topK },
+                { timeout: 5000 }
+            );
+            mlData = data;
+        } catch (error) {
+            console.error("ML service call failed:", error);
+            const { movie:movies } = await tmdb.discoverMovies(1, undefined, "rating");
+            return movies.slice(0, topK);
+        }
+
+        return this.resolveTitlesToMovies(mlData.titles, tmdb);
+    }
+
+    async getSimilarMovies(title: string, topK = 10) {
+        const tmdb = new TmdbService();
+
+        let mlData: mlListResponse;
+        try {
+            const { data } = await axios.post<mlListResponse>(
+                `${process.env.ML_SERVICE_URL}/recommend/similar`,
+                { title, top_k: topK },
+                { timeout: 5000 }
+            );
+            mlData = data;
+        } catch (error) {
+            console.error("ML similar-movies call failed:", error);
+            const searchResult = await tmdb.searchMovies(title, 1);
+            const match = searchResult.movie[0];
+            if (!match) return [];
+            return tmdb.getSimilarMovies(match.tmdbId);
+        }
+
+        return this.resolveTitlesToMovies(mlData.titles, tmdb);
+    }
+
+    private async resolveTitlesToMovies(titles: string[], tmdb: TmdbService) {
+        const results = await Promise.all(
+            titles.map(async (title) => {
+                const searchResult = await tmdb.searchMovies(title, 1);
+                return searchResult.movie[0]; // best match, or undefined if not found
+            })
+        );
+        return results.filter((m): m is NonNullable<typeof m> => m !== undefined);
+    }
 }

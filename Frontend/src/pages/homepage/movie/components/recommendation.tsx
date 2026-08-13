@@ -9,10 +9,9 @@ export default function RecommendedMovies() {
   const [movies, setMovies] = useState<Movie[]>([]);
 
   useEffect(() => {
-    getrecommendations(undefined as never)
-      .then((data) => setMovies(data.movies))
-      .catch(() => {
-      });
+    getrecommendations()
+      .then((data) => setMovies(data.movies ?? []))
+      .catch(() => setMovies([]));
   }, []);
 
   if (movies.length === 0) return null;
@@ -22,7 +21,7 @@ export default function RecommendedMovies() {
       <h2 className="text-xl font-semibold mb-4">Recommended for you</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {movies.map((movie) => (
-          <Link to={`/movies/${movie.id}`} key={movie.id}>
+          <Link to={`/movies/${movie.tmdbId}`} key={movie.tmdbId}>
             {movie.posterUrl && <img src={movie.posterUrl} alt={movie.title} className="rounded" />}
             <p className="mt-2 font-medium">{movie.title}</p>
           </Link>

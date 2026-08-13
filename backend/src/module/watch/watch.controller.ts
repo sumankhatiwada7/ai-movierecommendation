@@ -2,21 +2,24 @@ import { watchservice } from "./watch.service";
 import type{Request,Response} from "express"
 import type { watchhistoryresponse } from "./watch.type";
 import { AuthenticatedRequest } from "../auth/auth.middleware";
+import { TmdbService } from "../tmdb/tmdb.service";
 
 
 export async function logwatch(Req:AuthenticatedRequest,Res:Response){
 
 try{
     const userId = String(Req.user?.id);
-    const movieId =Number(Req.params.movieId);
-    if(!movieId){
+    const tmdbId = Number(Req.params.tmdbId);
+    if(!tmdbId){
         const payload:watchhistoryresponse={
-            message:"Movie id is missing",
+            message:"TMDB id is missing",
             sucess:false
         }
-       Res.status(400).json(payload);
+       return Res.status(400).json(payload);
     }
-    const watchserviceres = await new watchservice().logwatch(userId,movieId);
+    const movie = await new TmdbService().getMovieDetails(tmdbId);
+
+    const watchserviceres = await new watchservice().logwatch(userId,tmdbId,movie.title);
     const payload:watchhistoryresponse={
         message:"Watch history logged successfully",
         sucess:true

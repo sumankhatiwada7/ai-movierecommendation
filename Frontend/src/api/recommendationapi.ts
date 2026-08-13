@@ -1,12 +1,12 @@
-import {api} from './axios';
-import type{recommendationdata,recommendationresponse} from "../type/movie.type";
+import { api } from './axios';
+import type { recommendationresponse } from "../type/movie.type";
 
+export const getrecommendations = async () => {
+    const response = await api.get(`/recommendations/`);
+    return response.data as recommendationresponse<any>;
+};
 
-export const getrecommendations= async (data:recommendationdata)=>{
-    const response = await api.get(`/recommendation/${data.userId}`);
+export const similarMovies = async (title: string) => {
+    const response = await api.get(`/recommendations/similar`, { params: { title } });
     return response.data as recommendationresponse<any>;
-}
-export const similarMovies= async (movieid:number)=>{
-    const response = await api.get(`/recommendation/similar/${movieid}`);
-    return response.data as recommendationresponse<any>;
-}
+};
