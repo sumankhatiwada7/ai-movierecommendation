@@ -63,3 +63,9 @@ export interface recommendationresponse<T>{
 export interface watchdata{
     tmdbId:number
 }
+export interface WatchSource {
+    identifier: string;
+    videoUrl: string;
+    title: string;
+}
+

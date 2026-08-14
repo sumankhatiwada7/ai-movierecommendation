@@ -6,10 +6,10 @@ interface TokenPayload {
     role: string;
 }
 
-const accesstoken =process.env.JWT_SECRET||'';
+const accesstoken =process.env.JWT_SECRET||'ajsjhsjssjjsjh';
 const accesstoken_expiresin=process.env.JWT_SECRET_EXPIRESIN as jwt.SignOptions["expiresIn"] | undefined;
 
-const refreshtoken =process.env.JWT_REFRESH_SECRET||'';
+const refreshtoken =process.env.JWT_REFRESH_SECRET||'jjkjkjnkjnknjn';
 const refreshtoken_expiresin=process.env.JWT_REFRESH_SECRET_EXPIRESIN as jwt.SignOptions["expiresIn"] | undefined;
 
 

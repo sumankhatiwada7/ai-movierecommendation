@@ -24,17 +24,17 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-black/90 backdrop-blur px-6 py-3 flex items-center justify-between text-white">
+    <nav className="sticky top-0 z-50 bg-surface/90 backdrop-blur border-b border-edge px-6 py-3 flex items-center justify-between text-ink">
       <Link
         to="/"
-        className="text-xl font-bold text-red-600 flex-shrink-0"
+        className="font-display text-xl font-bold text-primary flex-shrink-0"
       >
         MovieRec
       </Link>
 
       <Link
         to="/browse"
-        className="text-sm text-gray-300 hover:text-white"
+        className="text-sm text-muted hover:text-ink transition-colors"
       >
         Browse
       </Link>
@@ -48,7 +48,7 @@ export default function Navbar() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search movies..."
-          className="w-full bg-gray-800 rounded px-4 py-1.5 text-sm outline-none focus:ring-1 focus:ring-red-600"
+          className="w-full bg-bg border border-edge rounded-full px-4 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
         />
       </form>
 
@@ -56,19 +56,19 @@ export default function Navbar() {
         {user?.role === "admin" && (
           <Link
             to="/admin/movies"
-            className="text-sm text-gray-300 hover:text-white"
+            className="text-sm text-muted hover:text-ink"
           >
             Admin
           </Link>
         )}
 
-        <span className="text-sm text-gray-300 hidden sm:inline">
+        <span className="text-sm text-muted hidden sm:inline">
           {user?.name}
         </span>
 
         <button
           onClick={handleLogout}
-          className="text-sm bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded"
+          className="text-sm bg-bg border border-edge hover:border-primary hover:text-primary px-4 py-1.5 rounded-full transition"
         >
           Log out
         </button>

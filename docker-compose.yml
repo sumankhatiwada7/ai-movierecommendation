@@ -1,7 +1,18 @@
 services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   postgres:
     image: postgres:16-alpine
-    container_name: postgres_db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -20,18 +31,25 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: backend_app
     ports:
       - "3000:3000"
+
+    env_file:
+      - ./backend/.env
+
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/myapp
+
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
     volumes:
-      - ./backend:/app
-      - /app/node_modules
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - backend_node_modules:/app/node_modules
 
     develop:
       watch:
@@ -43,7 +61,6 @@ services:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
-    container_name: frontend_app
     ports:
       - "5173:5173"
     environment:
@@ -52,6 +69,7 @@ services:
       - backend
     volumes:
       - ./Frontend/src:/app/src
+      - frontend_node_modules:/app/node_modules
     develop:
       watch:
         - action: sync
@@ -60,3 +78,6 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
+  backend_node_modules:
+  frontend_node_modules:

@@ -8,6 +8,8 @@ RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 COPY . .
 
-EXPOSE 5000
+RUN npx prisma generate
+
+EXPOSE 3000
 
 CMD ["npm", "run", "dev"]

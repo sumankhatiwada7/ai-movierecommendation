@@ -7,3 +7,8 @@ export const logwatch= async (tmdbId: number)=>{
     return response.data;
 
 }
+
+export const getWatchSource= async (tmdbId: number)=>{
+    const response = await api.get(`/watch/watch-source/${tmdbId}`);
+    return response.data;
+}
