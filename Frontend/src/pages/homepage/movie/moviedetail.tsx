@@ -1,30 +1,132 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchMovieById } from '../../../api/movieapi';
 import { logwatch } from '../../../api/watchapi';
-import { getWatchSource } from '../../../api/watchapi';
+import { getWatchProgress, saveWatchProgress } from '../../../api/watchapi';
 import type { Movie } from '../../../type/movie.type';
-import type { WatchSource } from '../../../type/movie.type';
 import SimilarMovies from './components/similarMovies';
-import VideoPlayer from './components/videoplayer';
+
+// Available VidCore servers – try these if one is slow
+const VIDCORE_SERVERS = ['auto', 'server1', 'server2', 'server3', 'server4'];
 
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();
   const [movie, setMovie] = useState<Movie | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [watchSource, setWatchSource] = useState<WatchSource | null>(null);
-  const [checkingSource, setCheckingSource] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
+  const [savedTime, setSavedTime] = useState<number>(0);
+  const [playerReady, setPlayerReady] = useState(false);
+  const [selectedServer, setSelectedServer] = useState('auto');
+  const [loadAttempts, setLoadAttempts] = useState(0);
+  const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
 
+  const tmdbId = id ? Number(id) : NaN;
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const currentTimeRef = useRef<number>(0);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ----- Load saved time from backend -----
+  const loadSavedTime = useCallback(async () => {
+    if (isNaN(tmdbId)) return;
+    try {
+      const time = await getWatchProgress(tmdbId);
+      setSavedTime(time);
+      currentTimeRef.current = time;
+    } catch (error) {
+      console.warn('Failed to load watch progress:', error);
+    }
+  }, [tmdbId]);
+
+  // ----- Save current time to backend (debounced) -----
+  const saveTime = useCallback(async (time: number) => {
+    if (isNaN(tmdbId) || time <= 0) return;
+    
+    try {
+      await saveWatchProgress({ tmdbId, time });
+    } catch (error) {
+      console.warn('Failed to save watch progress:', error);
+    }
+  }, [tmdbId]);
+
+  // ----- Build VidCore URL with current server and startAt -----
+  const getVidCoreUrl = useCallback(() => {
+    if (isNaN(tmdbId)) return '';
+    let url = `https://vidcore.io/movie/${tmdbId}?autoPlay=true&theme=16A085`;
+    if (selectedServer && selectedServer !== 'auto') {
+      url += `&server=${selectedServer}`;
+    }
+    if (savedTime > 0) {
+      url += `&startAt=${Math.floor(savedTime)}`;
+    }
+    // Add a cache-buster to force reload when server changes
+    if (loadAttempts > 0) {
+      url += `&_=${loadAttempts}`;
+    }
+    return url;
+  }, [tmdbId, selectedServer, savedTime, loadAttempts]);
+
+  // ----- Reload player with a (possibly) different server -----
+  const retryWithServer = (server: string) => {
+    setSelectedServer(server);
+    setPlayerReady(false);
+    setShowTimeoutMessage(false);
+    setLoadAttempts(prev => prev + 1);
+    // Clear the loading timer
+    if (loadingTimerRef.current) {
+      clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = null;
+    }
+    // Start a new timer for timeout message
+    loadingTimerRef.current = setTimeout(() => {
+      setShowTimeoutMessage(true);
+    }, 15000); // 15 seconds
+  };
+
+  // ----- PostMessage listener for time updates -----
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://vidcore.io') return;
+
+      let time: number | undefined;
+      const data = event.data;
+      if (data.currentTime !== undefined) {
+        time = data.currentTime;
+      } else if (data.data?.currentTime !== undefined) {
+        time = data.data.currentTime;
+      } else if (data.event === 'timeupdate' && data.data?.currentTime !== undefined) {
+        time = data.data.currentTime;
+      }
+
+      if (typeof time === 'number' && !isNaN(time) && time > 0) {
+        currentTimeRef.current = time;
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+          if (currentTimeRef.current > 0) {
+            saveTime(currentTimeRef.current);
+          }
+        }, 5000);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      if (currentTimeRef.current > 0) {
+        saveTime(currentTimeRef.current);
+      }
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [saveTime]);
+
+  // ----- Fetch movie and progress in parallel -----
   useEffect(() => {
     if (!id) {
       setError('Movie ID is missing');
       setLoading(false);
       return;
     }
-
-    const tmdbId = Number(id);
     if (isNaN(tmdbId)) {
       setError('Invalid movie ID');
       setLoading(false);
@@ -34,30 +136,66 @@ export default function MovieDetail() {
     setLoading(true);
     setError(null);
     setShowPlayer(false);
-    setWatchSource(null);
+    setPlayerReady(false);
+    setShowTimeoutMessage(false);
+    setLoadAttempts(0);
 
-    fetchMovieById(tmdbId)
-      .then((data) => {
-        setMovie(data.movie);
+    const fetchData = async () => {
+      try {
+        const [movieData, progressTime] = await Promise.all([
+          fetchMovieById(tmdbId),
+          getWatchProgress(tmdbId).catch(() => 0),
+        ]);
+
+        setMovie(movieData.movie);
+        setSavedTime(progressTime);
+        currentTimeRef.current = progressTime;
         logwatch(tmdbId).catch(console.warn);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Failed to fetch movie:', err);
         setError('Unable to load movie details. Please try again later.');
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setCheckingSource(true);
-    getWatchSource(tmdbId)
-      .then((data) => setWatchSource(data.source))
-      .catch((err) => {
-        console.warn('Watch source lookup failed:', err);
-        setWatchSource(null);
-      })
-      .finally(() => setCheckingSource(false));
-  }, [id]);
+    fetchData();
+  }, [id, tmdbId]);
 
-  // Loading state
+  // ----- Close player: save and hide -----
+  const handleClosePlayer = useCallback(() => {
+    if (currentTimeRef.current > 0) {
+      saveTime(currentTimeRef.current);
+    }
+    setShowPlayer(false);
+    setPlayerReady(false);
+    setShowTimeoutMessage(false);
+    if (loadingTimerRef.current) {
+      clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = null;
+    }
+  }, [saveTime]);
+
+  // ----- Save before unload -----
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (currentTimeRef.current > 0) {
+        const payload = JSON.stringify({ movieId: tmdbId, time: currentTimeRef.current });
+        navigator.sendBeacon('/api/watch-progress', payload);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [tmdbId]);
+
+  // Clear timer on unmount
+  useEffect(() => {
+    return () => {
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+    };
+  }, []);
+
+  // ----- Loading state -----
   if (loading) {
     return (
       <div className="bg-bg min-h-screen text-ink p-6 animate-pulse">
@@ -75,7 +213,7 @@ export default function MovieDetail() {
     );
   }
 
-  // Error state
+  // ----- Error state -----
   if (error || !movie) {
     return (
       <div className="bg-bg min-h-screen text-ink p-6 flex items-center justify-center">
@@ -92,10 +230,10 @@ export default function MovieDetail() {
     );
   }
 
-  // Main render
+  // ----- Main render -----
   return (
     <div className="bg-bg text-ink min-h-screen">
-      {/* Hero Section with Backdrop */}
+      {/* Hero Section (unchanged) */}
       <div className="relative w-full h-[60vh] overflow-hidden bg-bg">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
         <div className="absolute -bottom-32 right-0 w-80 h-80 bg-primary-dark/15 rounded-full blur-3xl" />
@@ -150,9 +288,18 @@ export default function MovieDetail() {
                 {movie.description || 'No description available.'}
               </p>
 
-              {!checkingSource && watchSource && !showPlayer && (
+              {!showPlayer && (
                 <button
-                  onClick={() => setShowPlayer(true)}
+                  onClick={() => {
+                    setShowPlayer(true);
+                    setPlayerReady(false);
+                    setShowTimeoutMessage(false);
+                    // Start the timeout timer for the first load
+                    if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+                    loadingTimerRef.current = setTimeout(() => {
+                      setShowTimeoutMessage(true);
+                    }, 15000);
+                  }}
                   className="mt-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-full font-semibold transition"
                 >
                   ▶ Watch Full Movie
@@ -163,10 +310,73 @@ export default function MovieDetail() {
         </div>
       </div>
 
-      {/* Player / Trailer Section */}
-      {showPlayer && watchSource ? (
+      {/* Player Section */}
+      {showPlayer ? (
         <div className="max-w-4xl mx-auto px-4 -mt-12 relative z-10">
-          <VideoPlayer videoUrl={watchSource.videoUrl} title={watchSource.title} />
+          <div className="bg-surface backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-edge aspect-video relative">
+            {/* Loading Spinner */}
+            {!playerReady && (
+              <div className="absolute inset-0 flex items-center justify-center bg-surface/80 z-10 flex-col gap-3">
+                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-muted">Loading stream...</span>
+                {showTimeoutMessage && (
+                  <div className="text-center mt-2">
+                    <p className="text-xs text-muted">Taking longer than usual.</p>
+                    <div className="flex gap-2 mt-2 flex-wrap justify-center">
+                      <button
+                        onClick={() => retryWithServer('server1')}
+                        className="text-xs bg-surface border border-edge px-3 py-1 rounded-full hover:border-primary transition"
+                      >
+                        Try Server 1
+                      </button>
+                      <button
+                        onClick={() => retryWithServer('server2')}
+                        className="text-xs bg-surface border border-edge px-3 py-1 rounded-full hover:border-primary transition"
+                      >
+                        Try Server 2
+                      </button>
+                      <button
+                        onClick={() => retryWithServer('auto')}
+                        className="text-xs bg-surface border border-edge px-3 py-1 rounded-full hover:border-primary transition"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <iframe
+              ref={iframeRef}
+              src={getVidCoreUrl()}
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              allowFullScreen
+              allow="encrypted-media"
+              title={`${movie.title} - VidCore Player`}
+              onLoad={() => {
+                setPlayerReady(true);
+                setShowTimeoutMessage(false);
+                if (loadingTimerRef.current) {
+                  clearTimeout(loadingTimerRef.current);
+                  loadingTimerRef.current = null;
+                }
+              }}
+              className={playerReady ? 'opacity-100' : 'opacity-0'}
+            />
+          </div>
+          <div className="text-center mt-4 flex gap-4 justify-center items-center">
+            <button
+              onClick={handleClosePlayer}
+              className="text-sm text-muted hover:text-primary transition"
+            >
+              Close player
+            </button>
+            {playerReady && (
+              <span className="text-xs text-muted">Server: {selectedServer}</span>
+            )}
+          </div>
         </div>
       ) : (
         movie.trailerKey && (
@@ -181,12 +391,6 @@ export default function MovieDetail() {
             </div>
           </div>
         )
-      )}
-
-      {!checkingSource && !watchSource && (
-        <p className="max-w-4xl mx-auto px-4 -mt-8 relative z-10 text-sm text-muted">
-          Full movie not available for this title — showing trailer only.
-        </p>
       )}
 
       {/* Similar Movies */}

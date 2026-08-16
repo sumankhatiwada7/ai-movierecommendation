@@ -69,3 +69,7 @@ export interface WatchSource {
     title: string;
 }
 
+export interface watchpogressdata{
+    tmdbId:number;
+    time:number;
+}

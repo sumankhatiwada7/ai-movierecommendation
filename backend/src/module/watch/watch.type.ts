@@ -14,3 +14,14 @@ export interface watchsourceresponse {
     sucess: boolean;
     source: archivematch | null;
 }
+export interface watchprogressapiresponse {
+    message: string;
+    sucess: boolean;
+   
+}
+export interface watchprogressresponse<t> extends watchprogressapiresponse {
+    time: t;
+}
+export interface watchprogressbatch <t> extends watchprogressapiresponse {
+    movies:t;
+}

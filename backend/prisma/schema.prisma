@@ -39,3 +39,13 @@ model watchhistory {
   @@index([userId])
   @@map("watch_history")
 }
+model WatchProgress {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  tmdbId    Int   @map("tmdb_id") // can be TMDB numeric or IMDB id (tt...)
+  time      Float    
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@unique([userId, tmdbId])
+  @@map("watch_progress")
+}
