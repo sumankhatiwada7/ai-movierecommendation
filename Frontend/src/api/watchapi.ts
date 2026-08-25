@@ -1,5 +1,5 @@
 import {api} from './axios'
-import type{watchpogressdata} from "../type/movie.type"
+import type{watchpogressdata,WatchProgressBatchResponse} from "../type/movie.type"
 
 
 export const logwatch= async (tmdbId: number)=>{
@@ -21,7 +21,12 @@ export const saveWatchProgress= async ( data: watchpogressdata)=>{
     const response = await api.post(`/watch/watchprogress`,data);
     return response.data;
 }
-export const getWatchProgressBatch= async (tmdbIds: number[])=>{
+export const getWatchProgressBatch= async (tmdbIds: number[]): Promise<WatchProgressBatchResponse>=>{
     const response = await api.get(`/watch/watchprogressbatch`,{params:{ids: tmdbIds}})
+    return response.data;
+}
+
+export const getWatchHistory= async ()=>{
+    const response = await api.get(`/watch/watchhistory`);
     return response.data;
 }

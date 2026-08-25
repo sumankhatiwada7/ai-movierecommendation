@@ -1,8 +1,9 @@
 import { watchservice } from "./watch.service";
 import type { Request, Response } from "express"
-import type { watchhistoryresponse, watchsourceresponse, watchprogressapiresponse, watchprogressresponse,watchprogressbatch } from "./watch.type";
+import type { watchhistoryresponse, watchsourceresponse, watchprogressapiresponse, watchprogressresponse,watchprogressbatch ,watchhistoryresponsemovie,Movie } from "./watch.type";
 import { AuthenticatedRequest } from "../auth/auth.middleware";
 import { TmdbService } from "../tmdb/tmdb.service";
+
 
 
 export async function logwatch(Req: AuthenticatedRequest, Res: Response) {
@@ -124,13 +125,14 @@ export async function recordwatchprogress(Req: AuthenticatedRequest, Res: Respon
 
     }
     catch (error) {
+
         const payload: watchprogressapiresponse = {
             message: "internal server error",
             sucess: false
         }
         return Res.status(500).json(payload);
     }
-    console.error("Error retrieving watch progress:", Error);
+    
 
 }
 
@@ -161,6 +163,7 @@ export async function watchpogressbatch(Req: AuthenticatedRequest, Res: Response
             }
             return Res.status(404).json(payload);
         }
+
       
         const payload: watchprogressbatch<{tmdbId:number,time:number}[]> = {
             message: "Watch progress retrieved successfully",
@@ -171,13 +174,59 @@ export async function watchpogressbatch(Req: AuthenticatedRequest, Res: Response
 
     }
     catch (error) {
+        console.log('error:',error);
         const payload: watchprogressapiresponse = {
             message: "internal server error",
             sucess: false
         }
         return Res.status(500).json(payload);
     }
-    console.error("Error retrieving watch progress:", Error);
+
+    
+}
+
+export async function watchhistory(Req: AuthenticatedRequest, Res: Response) {
+    try{
+   const id = Req.user?.id;
+   const watchhistory = await new watchservice().watchhistory(String(id));
+   if(!watchhistory){
+    const payload:watchprogressapiresponse={
+        message:"no watch history found",
+        sucess:false
+    }
+    return Res.status(404).json(payload);
+   }
+   const moviePromises = watchhistory.map(entry => 
+      new TmdbService().getMovieDetails(entry.tmdbId)
+        .catch(err => {
+          console.warn(`Failed to fetch details for tmdbId ${entry.tmdbId}:`, err);
+          return null; // skip movies that fail
+        })
+    );
+
+        const movies = (await Promise.all(moviePromises))
+      .filter((movie): movie is NonNullable<typeof movie> => movie !== null)
+      .filter(movie => movie !== null) as Movie[];  
+
+
+   const payload: watchhistoryresponsemovie<{tmdbId:number,title:string,watchedAt:Date}[]> = {
+    message: "Watch history retrieved successfully",
+    sucess: true,
+    movies,
+   }
+   return Res.status(200).json(payload);
+    }
+    catch (error) {
+         const payload: watchprogressapiresponse = {
+            message: "internal server error",
+            sucess: false
+        }
+        return Res.status(500).json(payload);
+        console.error("Error retrieving watch history:", Error);
+    
+    }
+    
+    
     
 }
 

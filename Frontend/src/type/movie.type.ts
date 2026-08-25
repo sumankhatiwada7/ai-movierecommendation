@@ -73,3 +73,11 @@ export interface watchpogressdata{
     tmdbId:number;
     time:number;
 }
+export interface WatchProgressBatchResponse {
+  movies: {
+    tmdbId: number;
+    time: number; // seconds watched
+  }[];
+
+}
+

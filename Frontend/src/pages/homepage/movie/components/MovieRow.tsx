@@ -5,9 +5,10 @@ import { useState, useRef, useEffect } from "react";
 interface MovieRowProps {
   title: string;
   movies: Movie[];
+  progressMap?: Record<number, number>; // tmdbId -> seconds watched
 }
 
-export default function MovieRow({ title, movies }: MovieRowProps) {
+export default function MovieRow({ title, movies, progressMap = {} }: MovieRowProps) {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -94,58 +95,83 @@ export default function MovieRow({ title, movies }: MovieRowProps) {
           msOverflowStyle: "none",
         }}
       >
-        {movies.map((movie, index) => (
-          <Link
-            to={`/movies/${movie.tmdbId}`}
-            key={movie.tmdbId}
-            className="flex-shrink-0 w-48 transition-all duration-300 
-                       hover:scale-110 hover:z-20 snap-start group/movie"
-            style={{
-              transitionDelay: `${index * 30}ms`,
-            }}
-          >
-            <div className="relative">
-              {/* Movie Poster */}
-              {movie.posterUrl ? (
-                <img
-                  src={movie.posterUrl}
-                  alt={movie.title}
-                  className="rounded-lg w-48 h-72 object-cover shadow-lg
-                             transition-shadow duration-300
-                             group-hover/movie:shadow-2xl group-hover/movie:shadow-red-600/20"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-48 h-72 bg-gradient-to-br from-gray-800 to-gray-900 
-                              rounded-lg flex items-center justify-center text-sm text-gray-400
-                              border border-gray-700">
-                  No image
-                </div>
-              )}
+        {movies.map((movie, index) => {
+          const progress = progressMap[movie.tmdbId] || 0;
+          // Compute percentage if duration is available
+          const durationSeconds = movie.durationMinutes ? movie.durationMinutes * 60 : 0;
+          const progressPercent = durationSeconds > 0
+            ? Math.min((progress / durationSeconds) * 100, 100)
+            : 0;
+          const showProgress = progress > 0 && durationSeconds > 0;
 
-              {/* Hover Overlay - Shows on hover */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent
-                            opacity-0 group-hover/movie:opacity-100 transition-opacity duration-300
-                            rounded-lg flex flex-col justify-end p-4">
-                <p className="text-sm font-semibold text-white line-clamp-2">
-                  {movie.title}
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-yellow-400">⭐ {movie.averageRating.toFixed(1)}</span>
-                  <span className="text-xs text-white/60">• {new Date().getFullYear()}</span>
+          return (
+            <Link
+              to={`/movies/${movie.tmdbId}`}
+              key={movie.tmdbId}
+              className="flex-shrink-0 w-48 transition-all duration-300 
+                         hover:scale-110 hover:z-20 snap-start group/movie"
+              style={{
+                transitionDelay: `${index * 30}ms`,
+              }}
+            >
+              <div className="relative">
+                {/* Movie Poster */}
+                {movie.posterUrl ? (
+                  <img
+                    src={movie.posterUrl}
+                    alt={movie.title}
+                    className="rounded-lg w-48 h-72 object-cover shadow-lg
+                               transition-shadow duration-300
+                               group-hover/movie:shadow-2xl group-hover/movie:shadow-red-600/20"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-48 h-72 bg-gradient-to-br from-gray-800 to-gray-900 
+                                rounded-lg flex items-center justify-center text-sm text-gray-400
+                                border border-gray-700">
+                    No image
+                  </div>
+                )}
+
+                {/* Progress Bar - only shown if progress exists */}
+                {showProgress && (
+                  <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gray-700/70 rounded-b-lg overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-500 ease-out"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                )}
+
+                {/* Hover Overlay - Shows on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent
+                              opacity-0 group-hover/movie:opacity-100 transition-opacity duration-300
+                              rounded-lg flex flex-col justify-end p-4">
+                  <p className="text-sm font-semibold text-white line-clamp-2">
+                    {movie.title}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-yellow-400">⭐ {movie.averageRating.toFixed(1)}</span>
+                    <span className="text-xs text-white/60">• {new Date().getFullYear()}</span>
+                  </div>
+                  {showProgress && (
+                    <div className="mt-1 text-xs text-white/70">
+                      {Math.round(progressPercent)}% watched
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Title below poster (visible when not hovering) */}
-            <p className="mt-2 text-sm font-medium text-white/90 truncate px-1">
-              {movie.title}
-            </p>
-            <p className="text-xs text-yellow-400 px-1">
-              ⭐ {movie.averageRating.toFixed(1)}
-            </p>
-          </Link>
-        ))}
+              {/* Title below poster (visible when not hovering) */}
+              <p className="mt-2 text-sm font-medium text-white/90 truncate px-1">
+                {movie.title}
+              </p>
+              <p className="text-xs text-yellow-400 px-1">
+                ⭐ {movie.averageRating.toFixed(1)}
+              </p>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Gradient Fade Effects */}

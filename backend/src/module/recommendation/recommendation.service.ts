@@ -26,7 +26,7 @@ export class RecommendationService {
             const { data } = await axios.post<mlListResponse>(
                 `${process.env.ML_SERVICE_URL}/recommend`,
                 { titles: watchedTitles, top_k: topK },
-                { timeout: 30000 }
+                { timeout: 50000 }
             );
             mlData = data;
         } catch (error) {
@@ -46,7 +46,7 @@ export class RecommendationService {
             const { data } = await axios.post<mlListResponse>(
                 `${process.env.ML_SERVICE_URL}/recommend/similar`,
                 { title, top_k: topK },
-                { timeout: 5000 }
+                { timeout: 50000 }
             );
             mlData = data;
         } catch (error) {

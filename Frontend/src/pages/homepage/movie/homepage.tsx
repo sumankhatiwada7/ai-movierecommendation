@@ -2,19 +2,23 @@ import { useEffect, useState } from "react";
 import { fetchmovies } from "../../../api/movieapi";
 import { fetchGenres } from "../../../api/genreapi";
 import { getrecommendations } from "../../../api/recommendationapi";
+import { getWatchHistory, getWatchProgressBatch } from "../../../api/watchapi";
 import type { Movie, Genre } from "../../../type/movie.type";
-import HeroBanner from "./components/HeroBanner";
+import HeroBanner from "./components/HeroBanner"; 
 import MovieRow from "./components/MovieRow";
 
 export default function Homepage() {
   const [heroMovie, setHeroMovie] = useState<Movie | null>(null);
   const [recommended, setRecommended] = useState<Movie[]>([]);
   const [trending, setTrending] = useState<Movie[]>([]);
+  const [watchHistory, setWatchHistory] = useState<Movie[]>([]);
+  const [watchProgressMap, setWatchProgressMap] = useState<Record<number, number>>({});
   const [newReleases, setNewReleases] = useState<Movie[]>([]);
   const [genreRows, setGenreRows] = useState<{ genre: Genre; movies: Movie[] }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Load main data
   useEffect(() => {
     let isMounted = true;
 
@@ -22,11 +26,13 @@ export default function Homepage() {
       try {
         setError(null);
 
-        const [recRes, newReleasesRes, trendingRes, genresRes] = await Promise.all([
+        // ✅ Correct order: recRes, watchhistoryres, newReleasesRes, trendingRes, genresRes
+        const [recRes, watchhistoryres, newReleasesRes, trendingRes, genresRes] = await Promise.all([
           getrecommendations().catch((err) => {
             console.warn("Recommendations failed:", err);
             return { movies: [] as Movie[] };
           }),
+          getWatchHistory().catch(() => ({ movies: [] as Movie[] })),
           fetchmovies({ page: 1, sortBy: "latest" }).catch((err) => {
             console.warn("New releases fetch failed:", err);
             return { movies: [] as Movie[] };
@@ -46,18 +52,21 @@ export default function Homepage() {
         const trendingMovies = trendingRes.movies || [];
         const newReleasesMovies = newReleasesRes.movies || [];
         const recommendedMovies = recRes.movies || [];
+        const watchHistoryMovies = watchhistoryres.movies || [];
 
         setNewReleases(newReleasesMovies);
         setTrending(trendingMovies);
         setRecommended(recommendedMovies);
+        setWatchHistory(watchHistoryMovies);
 
+        // Hero selection
         const heroCandidate =
           trendingMovies.find((m) => m.backdropUrl) ||
           newReleasesMovies[0] ||
           trendingMovies[0];
-
         setHeroMovie(heroCandidate || null);
 
+        // Genre rows
         const genres = genresRes || [];
         if (genres.length > 0) {
           try {
@@ -87,7 +96,6 @@ export default function Homepage() {
         if (trendingMovies.length === 0 && newReleasesMovies.length === 0 && recommendedMovies.length === 0) {
           setError("Unable to load movies. Please try again later.");
         }
-
       } catch (err) {
         console.error("Homepage load failed:", err);
         if (isMounted) {
@@ -104,7 +112,34 @@ export default function Homepage() {
     };
   }, []);
 
-  // Loading state with spinner
+  // Fetch watch progress separately (runs after watchHistory is updated)
+  useEffect(() => {
+    if (watchHistory.length === 0) return;
+
+    let isMounted = true;
+
+    async function fetchProgress() {
+      try {
+        const progressRes = await getWatchProgressBatch(watchHistory.map((m) => m.tmdbId));
+        if (!isMounted) return;
+
+        const progressMap: Record<number, number> = {};
+        progressRes.movies.forEach(({ tmdbId, time }: { tmdbId: number; time: number }) => {
+          progressMap[tmdbId] = time;
+        });
+        setWatchProgressMap(progressMap);
+      } catch (err) {
+        console.warn("Failed to fetch watch progress:", err);
+      }
+    }
+
+    fetchProgress();
+    return () => {
+      isMounted = false;
+    };
+  }, [watchHistory]); // depends on watchHistory
+
+  // Loading state
   if (isLoading) {
     return (
       <div className="bg-bg min-h-screen flex items-center justify-center">
@@ -137,7 +172,8 @@ export default function Homepage() {
     );
   }
 
-  const hasContent = heroMovie || recommended.length > 0 || trending.length > 0 || newReleases.length > 0 || genreRows.length > 0;
+  const hasContent =
+    heroMovie || recommended.length > 0 || trending.length > 0 || newReleases.length > 0 || genreRows.length > 0;
 
   if (!hasContent) {
     return (
@@ -158,17 +194,15 @@ export default function Homepage() {
       {heroMovie && <HeroBanner movie={heroMovie} />}
 
       <div className="mt-6 space-y-6">
-        {recommended.length > 0 && (
-          <MovieRow title="Recommended for you" movies={recommended} />
+        {recommended.length > 0 && <MovieRow title="Recommended for you" movies={recommended} />}
+
+        {watchHistory.length > 0 && (
+          <MovieRow title="Your Watch History" movies={watchHistory} progressMap={watchProgressMap} />
         )}
 
-        {trending.length > 0 && (
-          <MovieRow title="Trending Now" movies={trending} />
-        )}
+        {trending.length > 0 && <MovieRow title="Trending Now" movies={trending} />}
 
-        {newReleases.length > 0 && (
-          <MovieRow title="New Releases" movies={newReleases} />
-        )}
+        {newReleases.length > 0 && <MovieRow title="New Releases" movies={newReleases} />}
 
         {genreRows.map(({ genre, movies }) => (
           <MovieRow key={genre.id} title={genre.name} movies={movies} />

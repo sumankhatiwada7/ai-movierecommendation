@@ -50,5 +50,14 @@ export class watchservice{
             },
         })
     }
+
+    async watchhistory(userId:string,limit=10){
+        return prisma.watchhistory.findMany({
+            where:{userId},
+            orderBy:{watchedAt:'desc'},
+            take:limit,
+            select:{tmdbId:true,title:true,watchedAt:true}
+        })
+    }
     
 }

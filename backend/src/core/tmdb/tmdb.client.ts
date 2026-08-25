@@ -6,5 +6,5 @@ export const tmdbclient = axios.create({
     params: {
         api_key: process.env.TMDB_API_KEY,
     },
-    timeout: 5000,
+    timeout: 20000,
 })
