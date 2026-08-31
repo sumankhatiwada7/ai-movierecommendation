@@ -23,6 +23,7 @@ model user {
   role userrole @default(user)
   refreshtoken String 
   watchhistory watchhistory[]
+  watchlist watchlist[]
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
 
@@ -42,10 +43,21 @@ model watchhistory {
 model WatchProgress {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  tmdbId    Int   @map("tmdb_id") // can be TMDB numeric or IMDB id (tt...)
+  tmdbId    Int   @map("tmdb_id") 
   time      Float    
   updatedAt DateTime @default(now()) @map("updated_at")
 
   @@unique([userId, tmdbId])
   @@map("watch_progress")
+}
+model watchlist {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tmdbId    Int      @map("tmdb_id")
+  title     String? 
+  addedAt   DateTime @default(now()) @map("added_at")
+
+  @@unique([userId, tmdbId])
+  @@map("watchlist")
 }

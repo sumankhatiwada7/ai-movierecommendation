@@ -3,8 +3,8 @@
   tmdbId: number;
   title: string;
   description?: string;
-  releaseYear?: number;
-  durationMinutes?: number;
+  releaseYear?: number|undefined;
+  durationMinutes?: number|undefined;
   posterUrl?: string;
   backdropUrl?: string;
   trailerKey?: string;

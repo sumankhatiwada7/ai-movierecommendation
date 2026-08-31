@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../../../hooks/useauth";
+import WatchlistDropdown from "./watchlistdropdown"
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -38,6 +39,8 @@ export default function Navbar() {
       >
         Browse
       </Link>
+      
+      <WatchlistDropdown/>
 
       <form
         onSubmit={handleSearch}

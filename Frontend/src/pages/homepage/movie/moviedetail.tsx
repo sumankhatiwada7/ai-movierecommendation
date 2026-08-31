@@ -21,7 +21,10 @@ export default function MovieDetail() {
   const [loadAttempts, setLoadAttempts] = useState(0);
   const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
 
-  const tmdbId = id ? Number(id) : NaN;
+  // ✅ Validate tmdbId – if invalid, show error
+  const tmdbId = Number(id);
+  const isValidTmdbId = !isNaN(tmdbId) && tmdbId > 0;
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const currentTimeRef = useRef<number>(0);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -29,7 +32,7 @@ export default function MovieDetail() {
 
   // ----- Load saved time from backend -----
   const loadSavedTime = useCallback(async () => {
-    if (isNaN(tmdbId)) return;
+    if (!isValidTmdbId) return;
     try {
       const time = await getWatchProgress(tmdbId);
       setSavedTime(time);
@@ -37,22 +40,25 @@ export default function MovieDetail() {
     } catch (error) {
       console.warn('Failed to load watch progress:', error);
     }
-  }, [tmdbId]);
+  }, [tmdbId, isValidTmdbId]);
 
   // ----- Save current time to backend (debounced) -----
   const saveTime = useCallback(async (time: number) => {
-    if (isNaN(tmdbId) || time <= 0) return;
-    
+    // ✅ Guard: only save if valid tmdbId and positive time
+    if (!isValidTmdbId || time <= 0) return;
+
     try {
+      console.log('💾 Saving progress:', { tmdbId, time });
       await saveWatchProgress({ tmdbId, time });
+      console.log('✅ Progress saved successfully');
     } catch (error) {
       console.warn('Failed to save watch progress:', error);
     }
-  }, [tmdbId]);
+  }, [tmdbId, isValidTmdbId]);
 
   // ----- Build VidCore URL with current server and startAt -----
   const getVidCoreUrl = useCallback(() => {
-    if (isNaN(tmdbId)) return '';
+    if (!isValidTmdbId) return '';
     let url = `https://vidcore.io/movie/${tmdbId}?autoPlay=true&theme=16A085`;
     if (selectedServer && selectedServer !== 'auto') {
       url += `&server=${selectedServer}`;
@@ -60,12 +66,11 @@ export default function MovieDetail() {
     if (savedTime > 0) {
       url += `&startAt=${Math.floor(savedTime)}`;
     }
-    // Add a cache-buster to force reload when server changes
     if (loadAttempts > 0) {
       url += `&_=${loadAttempts}`;
     }
     return url;
-  }, [tmdbId, selectedServer, savedTime, loadAttempts]);
+  }, [tmdbId, selectedServer, savedTime, loadAttempts, isValidTmdbId]);
 
   // ----- Reload player with a (possibly) different server -----
   const retryWithServer = (server: string) => {
@@ -73,15 +78,13 @@ export default function MovieDetail() {
     setPlayerReady(false);
     setShowTimeoutMessage(false);
     setLoadAttempts(prev => prev + 1);
-    // Clear the loading timer
     if (loadingTimerRef.current) {
       clearTimeout(loadingTimerRef.current);
       loadingTimerRef.current = null;
     }
-    // Start a new timer for timeout message
     loadingTimerRef.current = setTimeout(() => {
       setShowTimeoutMessage(true);
-    }, 15000); // 15 seconds
+    }, 15000);
   };
 
   // ----- PostMessage listener for time updates -----
@@ -100,7 +103,10 @@ export default function MovieDetail() {
       }
 
       if (typeof time === 'number' && !isNaN(time) && time > 0) {
+        console.log('⏱️ Time update received:', time);
         currentTimeRef.current = time;
+
+        // Debounce save to avoid too many requests
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = setTimeout(() => {
           if (currentTimeRef.current > 0) {
@@ -127,7 +133,7 @@ export default function MovieDetail() {
       setLoading(false);
       return;
     }
-    if (isNaN(tmdbId)) {
+    if (!isValidTmdbId) {
       setError('Invalid movie ID');
       setLoading(false);
       return;
@@ -160,7 +166,7 @@ export default function MovieDetail() {
     };
 
     fetchData();
-  }, [id, tmdbId]);
+  }, [id, tmdbId, isValidTmdbId]);
 
   // ----- Close player: save and hide -----
   const handleClosePlayer = useCallback(() => {
@@ -179,14 +185,14 @@ export default function MovieDetail() {
   // ----- Save before unload -----
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (currentTimeRef.current > 0) {
+      if (currentTimeRef.current > 0 && isValidTmdbId) {
         const payload = JSON.stringify({ movieId: tmdbId, time: currentTimeRef.current });
         navigator.sendBeacon('/api/watch-progress', payload);
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [tmdbId]);
+  }, [tmdbId, isValidTmdbId]);
 
   // Clear timer on unmount
   useEffect(() => {
@@ -233,7 +239,7 @@ export default function MovieDetail() {
   // ----- Main render -----
   return (
     <div className="bg-bg text-ink min-h-screen">
-      {/* Hero Section (unchanged) */}
+      {/* Hero Section */}
       <div className="relative w-full h-[60vh] overflow-hidden bg-bg">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
         <div className="absolute -bottom-32 right-0 w-80 h-80 bg-primary-dark/15 rounded-full blur-3xl" />
@@ -294,7 +300,6 @@ export default function MovieDetail() {
                     setShowPlayer(true);
                     setPlayerReady(false);
                     setShowTimeoutMessage(false);
-                    // Start the timeout timer for the first load
                     if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
                     loadingTimerRef.current = setTimeout(() => {
                       setShowTimeoutMessage(true);
@@ -314,7 +319,6 @@ export default function MovieDetail() {
       {showPlayer ? (
         <div className="max-w-4xl mx-auto px-4 -mt-12 relative z-10">
           <div className="bg-surface backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-edge aspect-video relative">
-            {/* Loading Spinner */}
             {!playerReady && (
               <div className="absolute inset-0 flex items-center justify-center bg-surface/80 z-10 flex-col gap-3">
                 <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />

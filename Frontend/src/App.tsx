@@ -66,6 +66,7 @@ function AppRoutes() {
             )
           }
         />
+        
         <Route path="/search" element={<><Navbar /><SearchResults /></>} />
       </Routes>
     </div>

@@ -10,14 +10,11 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
-
   if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    } as typeof config.headers;
+    config.headers.Authorization = `Bearer ${token}`;
   }
-
+  // Ensure Content-Type is always set
+  config.headers['Content-Type'] = 'application/json';
   return config;
 });
 
