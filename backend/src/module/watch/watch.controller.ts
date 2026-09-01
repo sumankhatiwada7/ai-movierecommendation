@@ -10,17 +10,20 @@ export async function logwatch(Req: AuthenticatedRequest, Res: Response) {
 
     try {
         const userId = String(Req.user?.id);
-        const tmdbId = Number(Req.params.tmdbId);
-        if (!tmdbId) {
+        const rawTmdbId = Req.params.tmdbId ?? Req.body?.tmdbId ?? Req.query?.tmdbId;
+        const tmdbId = Number(rawTmdbId);
+
+        if (!Number.isFinite(tmdbId) || tmdbId <= 0) {
             const payload: watchhistoryresponse = {
                 message: "TMDB id is missing",
                 sucess: false
             }
             return Res.status(400).json(payload);
         }
+
         const movie = await new TmdbService().getMovieDetails(tmdbId);
 
-        const watchserviceres = await new watchservice().logwatch(userId, tmdbId, movie.title);
+        await new watchservice().logwatch(userId, tmdbId, movie.title);
         const payload: watchhistoryresponse = {
             message: "Watch history logged successfully",
             sucess: true
@@ -147,20 +150,34 @@ export async function recordwatchprogress(Req: AuthenticatedRequest, Res: Respon
 export async function watchpogressbatch(Req: AuthenticatedRequest, Res: Response) {
     try {
 
+        const rawIds = Req.query.ids ?? Req.query["ids[]"];
+        const normalizeIds = (value: unknown): number[] => {
+            if (value === undefined || value === null) return [];
 
-        const rawIds = Req.query.ids;
-        let tmdbIds: number[] = [];
+            if (Array.isArray(value)) {
+                return value.flatMap(item => normalizeIds(item));
+            }
 
-        if (typeof rawIds === 'string') {
-            tmdbIds = rawIds.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
-        } else if (Array.isArray(rawIds)) {
-            tmdbIds = rawIds.flatMap(id => {
-                const str = String(id);
-                return str.split(',').map(Number).filter(n => !isNaN(n));
-            });
-        }
+            if (typeof value === "object") {
+                return Object.values(value as Record<string, unknown>).flatMap(item => normalizeIds(item));
+            }
 
+            return String(value)
+                .split(',')
+                .map(item => Number(item.trim()))
+                .filter(item => Number.isFinite(item));
+        };
+
+        const tmdbIds = normalizeIds(rawIds);
         const id = Req.user?.id;
+
+        if (!id) {
+            const payload: watchprogressapiresponse = {
+                message: "User id is missing",
+                sucess: false
+            };
+            return Res.status(400).json(payload);
+        }
 
         const batchmovie = await new watchservice().watchpogressbatch(String(id), tmdbIds);
         if (!batchmovie) {

@@ -5,11 +5,11 @@ import{ logwatch,getwatchpogress,recordwatchprogress,watchpogressbatch,watchhist
 
 const router = Router();
 
-router.post("/:tmdbId", authenticate, logwatch);
-router.get("/watchprogress/:tmdbId", authenticate, getwatchpogress);
 router.post("/watchprogress", authenticate, recordwatchprogress);
+router.get("/watchprogress/:tmdbId", authenticate, getwatchpogress);
 router.get("/watchprogressbatch", authenticate, watchpogressbatch);
 router.get("/watchhistory", authenticate, watchhistory);
+router.post("/:tmdbId", authenticate, logwatch);
 
 export default router;
 
