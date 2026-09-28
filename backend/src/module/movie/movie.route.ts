@@ -1,13 +1,13 @@
-import {authorize,authenticate} from "../auth/auth.middleware";
+import {authenticate, activeSubscription} from "../auth/auth.middleware";
 import { Router } from "express";
 import { listMovies, getMovieById, listGenres} from "./movie.controller";
 
 
 const router = Router();
 
-router.get("/search", authenticate, listMovies);
-router.get("/", authenticate, listMovies);
-router.get("/genres", authenticate, listGenres);
-router.get("/:tmdbId", authenticate, getMovieById);
+router.get("/search", authenticate, activeSubscription, listMovies);
+router.get("/", authenticate, activeSubscription, listMovies);
+router.get("/genres", authenticate, activeSubscription, listGenres);
+router.get("/:tmdbId", authenticate, activeSubscription, getMovieById);
 
 export default router;

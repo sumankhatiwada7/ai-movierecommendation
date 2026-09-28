@@ -7,81 +7,87 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
 datasource db {
   provider = "postgresql"
 }
+
 enum userrole {
   user
   admin
 }
-enum subscriptionstatus {
 
+enum subscriptionstatus {
   active
   expired
   cancled
   past_due
 }
-enum paymentstatus{
-   pending
-   completed
-   canceled
-   refunded
+
+enum paymentstatus {
+  pending
+  completed
+  canceled
+  refunded
 }
 
 model user {
-  id    String @id @default(cuid())
-  name String
-  email String @unique
-  password String 
-  role userrole @default(user)
-  refreshtoken String 
-  watchhistory watchhistory[]
-  watchlist watchlist[]
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          userrole       @default(user)
+  refreshtoken  String
+  stripeCustomerId String? @unique @map("stripe_customer_id")
+  watchhistory  watchhistory[]
+  watchlist     watchlist[]
   subscriptions subscription[]
-  payments       payment[]
+  payments      payment[]
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
-
 }
 
 model watchhistory {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
   user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title  String
+  title     String
   tmdbId    Int      @map("tmdb_id")
   watchedAt DateTime @default(now()) @map("watched_at")
+
   @@unique([userId, tmdbId])
   @@index([userId])
   @@map("watch_history")
 }
+
 model WatchProgress {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  tmdbId    Int   @map("tmdb_id") 
-  time      Float    
+  tmdbId    Int      @map("tmdb_id")
+  time      Float
   updatedAt DateTime @default(now()) @map("updated_at")
 
   @@unique([userId, tmdbId])
   @@map("watch_progress")
 }
+
 model watchlist {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tmdbId    Int      @map("tmdb_id")
-  title     String? 
-  addedAt   DateTime @default(now()) @map("added_at")
+  id      String   @id @default(cuid())
+  userId  String   @map("user_id")
+  user    user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tmdbId  Int      @map("tmdb_id")
+  title   String?
+  addedAt DateTime @default(now()) @map("added_at")
 
   @@unique([userId, tmdbId])
   @@map("watchlist")
 }
 
 model plan {
-  id           String   @id @default(cuid())
-  name         String   @unique
-  price        Decimal  @db.Decimal(10, 2)
-  durationDays Int      @map("duration_days")
+  id           String  @id @default(cuid())
+  name         String  @unique
+  price        Decimal @db.Decimal(10, 2)
+  durationDays Int     @map("duration_days")
 
   subscriptions subscription[]
 
@@ -99,7 +105,6 @@ model subscription {
   status    subscriptionstatus @default(active)
   startDate DateTime           @map("start_date")
   endDate   DateTime           @map("end_date")
-
   providerSubscriptionId String? @unique @map("provider_subscription_id")
 
   user user @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -112,6 +117,7 @@ model subscription {
   @@index([planId])
   @@map("subscriptions")
 }
+
 model payment {
   id     String @id @default(cuid())
   userId String @map("user_id")

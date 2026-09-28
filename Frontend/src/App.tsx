@@ -6,6 +6,7 @@ import Moviedetail from "./pages/homepage/movie/moviedetail";
 import BrowseMovies from "./pages/homepage/movie/BrowseMovies";
 import Navbar from "./pages/homepage/movie/components/Navbar";
 import SearchResults from "./pages/homepage/movie/SearchResults";
+import Subscription, { SubscriptionResult } from "./pages/subscription/Subscription";
 
 import ProtectedRoute from "./route/protectedroute";
 import { useAuth } from "./hooks/useauth";
@@ -21,7 +22,7 @@ function AppRoutes() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-[#111114] text-white">
       <Routes>
         <Route
           path="/login"
@@ -34,7 +35,7 @@ function AppRoutes() {
         <Route
           path="/"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requireSubscription>
               <>
                 <Navbar />
                 <Homepage />
@@ -45,7 +46,7 @@ function AppRoutes() {
         <Route
           path="/movies/:id"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requireSubscription>
               <>
                 <Navbar />
                 <Moviedetail />
@@ -57,17 +58,38 @@ function AppRoutes() {
           path="/browse"
           element={
             user ? (
-              <>
-                <Navbar />
-                <BrowseMovies />
-              </>
+              <ProtectedRoute requireSubscription>
+                <>
+                  <Navbar />
+                  <BrowseMovies />
+                </>
+              </ProtectedRoute>
             ) : (
               <Navigate to="/login" replace />
             )
           }
         />
+        <Route
+          path="/subscription"
+          element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <Subscription />
+              </>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/subscription/success"
+          element={<><Navbar /><SubscriptionResult /></>}
+        />
+        <Route
+          path="/subscription/cancel"
+          element={<><Navbar /><SubscriptionResult /></>}
+        />
         
-        <Route path="/search" element={<><Navbar /><SearchResults /></>} />
+        <Route path="/search" element={<ProtectedRoute requireSubscription><><Navbar /><SearchResults /></></ProtectedRoute>} />
       </Routes>
     </div>
   );

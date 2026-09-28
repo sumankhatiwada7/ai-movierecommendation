@@ -1,101 +1,37 @@
 import { useEffect, useState } from "react";
 import { fetchmovies } from "../../../api/movieapi";
-import { fetchGenres } from "../../../api/genreapi";
 import { getrecommendations } from "../../../api/recommendationapi";
 import { getWatchHistory, getWatchProgressBatch } from "../../../api/watchapi";
-import type { Movie, Genre } from "../../../type/movie.type";
-import HeroBanner from "./components/HeroBanner"; 
+import type { Movie } from "../../../type/movie.type";
+import MovieCard from "./components/MovieCard";
 import MovieRow from "./components/MovieRow";
 
 export default function Homepage() {
-  const [heroMovie, setHeroMovie] = useState<Movie | null>(null);
+  const [activeTab, setActiveTab] = useState("new");
+  const [catalogMovies, setCatalogMovies] = useState<Movie[]>([]);
   const [recommended, setRecommended] = useState<Movie[]>([]);
-  const [trending, setTrending] = useState<Movie[]>([]);
   const [watchHistory, setWatchHistory] = useState<Movie[]>([]);
   const [watchProgressMap, setWatchProgressMap] = useState<Record<number, number>>({});
-  const [newReleases, setNewReleases] = useState<Movie[]>([]);
-  const [genreRows, setGenreRows] = useState<{ genre: Genre; movies: Movie[] }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load main data
   useEffect(() => {
     let isMounted = true;
 
     async function loadHomepage() {
       try {
         setError(null);
-
-        // ✅ Correct order: recRes, watchhistoryres, newReleasesRes, trendingRes, genresRes
-        const [recRes, watchhistoryres, newReleasesRes, trendingRes, genresRes] = await Promise.all([
-          getrecommendations().catch((err) => {
-            console.warn("Recommendations failed:", err);
-            return { movies: [] as Movie[] };
-          }),
-          getWatchHistory().catch(() => ({ movies: [] as Movie[] })),
-          fetchmovies({ page: 1, sortBy: "latest" }).catch((err) => {
-            console.warn("New releases fetch failed:", err);
-            return { movies: [] as Movie[] };
-          }),
-          fetchmovies({ page: 1, sortBy: "rating" }).catch((err) => {
-            console.warn("Trending fetch failed:", err);
-            return { movies: [] as Movie[] };
-          }),
-          fetchGenres().catch((err) => {
-            console.warn("Genres fetch failed:", err);
-            return [] as Genre[];
-          }),
-        ]);
+        setIsLoading(true);
+        const sortBy = activeTab === "movies" ? "rating" : "latest";
+        const response = await fetchmovies({ page: 1, sortBy });
 
         if (!isMounted) return;
-
-        const trendingMovies = trendingRes.movies || [];
-        const newReleasesMovies = newReleasesRes.movies || [];
-        const recommendedMovies = recRes.movies || [];
-        const watchHistoryMovies = watchhistoryres.movies || [];
-
-        setNewReleases(newReleasesMovies);
-        setTrending(trendingMovies);
-        setRecommended(recommendedMovies);
-        setWatchHistory(watchHistoryMovies);
-
-        // Hero selection
-        const heroCandidate =
-          trendingMovies.find((m) => m.backdropUrl) ||
-          newReleasesMovies[0] ||
-          trendingMovies[0];
-        setHeroMovie(heroCandidate || null);
-
-        // Genre rows
-        const genres = genresRes || [];
-        if (genres.length > 0) {
-          try {
-            const rows = await Promise.all(
-              genres.slice(0, 5).map(async (genre) => {
-                try {
-                  const res = await fetchmovies({
-                    genreId: String(genre.id),
-                    page: 1,
-                  });
-                  return { genre, movies: res.movies || [] };
-                } catch (err) {
-                  console.warn(`Failed to fetch movies for genre ${genre.name}:`, err);
-                  return { genre, movies: [] };
-                }
-              })
-            );
-            setGenreRows(rows.filter((r) => r.movies.length > 0));
-          } catch (err) {
-            console.warn("Failed to fetch genre rows:", err);
-            setGenreRows([]);
-          }
-        } else {
-          setGenreRows([]);
+        let movies = response.movies || [];
+        if (activeTab === "anime") {
+          movies = movies.filter((movie) => movie.genres?.some((genre) => /anime/i.test(genre.name)));
         }
-
-        if (trendingMovies.length === 0 && newReleasesMovies.length === 0 && recommendedMovies.length === 0) {
-          setError("Unable to load movies. Please try again later.");
-        }
+        if (activeTab === "tv") movies = [];
+        setCatalogMovies(movies);
       } catch (err) {
         console.error("Homepage load failed:", err);
         if (isMounted) {
@@ -110,34 +46,42 @@ export default function Homepage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeTab]);
 
-  // Fetch watch progress separately (runs after watchHistory is updated)
   useEffect(() => {
-    if (watchHistory.length === 0) return;
-
     let isMounted = true;
+    Promise.all([
+      getrecommendations().catch(() => ({ movies: [] as Movie[] })),
+      getWatchHistory().catch(() => ({ movies: [] as Movie[] })),
+    ]).then(([recommendationResponse, watchHistoryResponse]) => {
+      if (!isMounted) return;
+      setRecommended(recommendationResponse.movies || []);
+      setWatchHistory(watchHistoryResponse.movies || []);
+    });
 
-    async function fetchProgress() {
-      try {
-        const progressRes = await getWatchProgressBatch(watchHistory.map((m) => m.tmdbId));
-        if (!isMounted) return;
-
-        const progressMap: Record<number, number> = {};
-        progressRes.movies.forEach(({ tmdbId, time }: { tmdbId: number; time: number }) => {
-          progressMap[tmdbId] = time;
-        });
-        setWatchProgressMap(progressMap);
-      } catch (err) {
-        console.warn("Failed to fetch watch progress:", err);
-      }
-    }
-
-    fetchProgress();
     return () => {
       isMounted = false;
     };
-  }, [watchHistory]); // depends on watchHistory
+  }, []);
+
+  useEffect(() => {
+    if (watchHistory.length === 0) return;
+    let isMounted = true;
+    getWatchProgressBatch(watchHistory.map((movie) => movie.tmdbId))
+      .then((response) => {
+        if (!isMounted) return;
+        const progressMap: Record<number, number> = {};
+        response.movies.forEach(({ tmdbId, time }) => {
+          progressMap[tmdbId] = time;
+        });
+        setWatchProgressMap(progressMap);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [watchHistory]);
 
   // Loading state
   if (isLoading) {
@@ -172,46 +116,58 @@ export default function Homepage() {
     );
   }
 
-  const hasContent =
-    heroMovie || recommended.length > 0 || trending.length > 0 || newReleases.length > 0 || genreRows.length > 0;
-
-  if (!hasContent) {
-    return (
-      <div className="bg-bg min-h-screen flex items-center justify-center px-4">
-        <div className="text-center">
-          <svg className="w-16 h-16 text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-          </svg>
-          <h2 className="font-display text-xl font-semibold text-ink mb-2">No movies available</h2>
-          <p className="text-muted">Check back later for new content</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-bg min-h-screen text-ink pb-12">
-      {heroMovie && <HeroBanner movie={heroMovie} />}
-
-      <div className="mt-6 space-y-6">
-        {recommended.length > 0 && <MovieRow title="Recommended for you" movies={recommended} />}
-
-        {watchHistory.length > 0 && (
-          <MovieRow title="Your Watch History" movies={watchHistory} progressMap={watchProgressMap} />
+    <div className="hotflix-shell min-h-screen pb-16 text-ink">
+      {recommended.length > 0 && (
+        <div className="pt-8 md:pt-10">
+          <MovieRow title="Recommendations" movies={recommended} />
+        </div>
+      )}
+      {watchHistory.length > 0 && (
+        <MovieRow title="Continue watching" movies={watchHistory} progressMap={watchProgressMap} />
+      )}
+      <main className="group/updated relative mb-10 pt-2">
+        <div className="page-width section-heading">
+          <h2>Recently updated</h2>
+          <span className="text-xs text-muted">{catalogMovies.length} titles</span>
+        </div>
+        <div className="page-width">
+          <div className="mb-8 flex max-w-full gap-6 overflow-x-auto border-b border-white/10 text-xs font-bold uppercase tracking-[.08em] text-muted sm:gap-8">
+            {[
+              ["new", "New items"],
+              ["movies", "Movies"],
+              ["tv", "TV shows"],
+              ["anime", "Anime"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`relative shrink-0 whitespace-nowrap pb-4 transition hover:text-white ${activeTab === key ? "text-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:bg-primary" : ""}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {error ? (
+          <p className="py-16 text-center text-muted">{error}</p>
+        ) : catalogMovies.length === 0 ? (
+          <p className="border border-dashed border-white/10 py-16 text-center text-muted">
+            {activeTab === "tv" ? "TV shows are not available in the current movie catalog." : "No titles found in this category."}
+          </p>
+        ) : (
+          <section className="page-width">
+            <div className="section-heading">
+              <h2>New items</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {catalogMovies.map((movie) => (
+                <MovieCard key={movie.tmdbId} movie={movie} />
+              ))}
+            </div>
+          </section>
         )}
-
-        {trending.length > 0 && <MovieRow title="Trending Now" movies={trending} />}
-
-        {newReleases.length > 0 && <MovieRow title="New Releases" movies={newReleases} />}
-
-        {genreRows.map(({ genre, movies }) => (
-          <MovieRow key={genre.id} title={genre.name} movies={movies} />
-        ))}
-
-        {recommended.length === 0 && trending.length === 0 && newReleases.length === 0 && genreRows.length > 0 && (
-          <p className="text-muted text-center px-6">Browse by genre below</p>
-        )}
-      </div>
+      </main>
     </div>
   );
 }

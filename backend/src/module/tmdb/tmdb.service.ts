@@ -19,8 +19,8 @@ function mapmovie(tmdbmovie:any){
 }
 
 export class TmdbService {
-    async discoverMovies(page:number, genreId?:number, sortBy: "latest" | "rating" = "latest"){
-        const cacheKey = `discover:${page}:${genreId ?? "all"}:${sortBy}`;
+    async discoverMovies(page:number, genreId?:number, sortBy: "latest" | "rating" = "latest", ratingMin?:number){
+        const cacheKey = `discover:${page}:${genreId ?? "all"}:${sortBy}:${ratingMin ?? "all"}`;
         return getOrSetCache(cacheKey, 3600, async () => {
 
         const {data}= await tmdbclient.get("/discover/movie",{
@@ -29,6 +29,7 @@ export class TmdbService {
                 with_genres: genreId,
                 sort_by: sortBy === "rating" ? "vote_average.desc" : "primary_release_date.desc",
                 "vote_count.gte": sortBy === "rating" ? 100 : undefined,
+                "vote_average.gte": ratingMin,
             }
         });
         return{

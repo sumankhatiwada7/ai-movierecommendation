@@ -8,6 +8,7 @@ import movieroute from '././src/module/movie/movie.route'
 import watchroute from '././src/module/watch/watch.route'
 import recommendationroute from '././src/module/recommendation/recommendation.route'
 import watchlistroute from '././src/module/watchlist/watchlist.route'
+import subscriptionroute from '././src/module/subscription/subscritption.route'
 env.config();
 const app = express();
 const port = Number(process.env.PORT ?? process.env.port ?? 3000);
@@ -30,6 +31,7 @@ app.use("/api/v1/movies",movieroute);
 app.use("/api/v1/watch",watchroute);
 app.use("/api/v1/recommendations",recommendationroute);
 app.use("/api/v1/watchlist",watchlistroute);
+app.use("/api/v1/subscription",subscriptionroute);
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Backend is running' });

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import { verfiyaccessToken } from "../../core/jwt/token";
+import { prisma } from "../../core/database/prisma";
 
 export interface AuthenticatedRequest extends Request {
     user?: {
@@ -82,4 +83,22 @@ export function authorize(roles: string[]) {
             return res.status(500).json(payload);
         }
     };
+}
+
+export async function activeSubscription(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ message: "Authentication required", sucess: false });
+
+        const subscription = await prisma.subscription.findFirst({
+            where: { userId, status: "active", endDate: { gt: new Date() } },
+            select: { id: true },
+        });
+
+        if (!subscription) return res.status(402).json({ message: "An active subscription is required", sucess: false });
+        return next();
+    } catch (error) {
+        console.error("Subscription check failed:", error);
+        return res.status(500).json({ message: "Internal server error", sucess: false });
+    }
 }

@@ -5,39 +5,39 @@ export default function HeroBanner({ movie }: { movie: Movie }) {
   const navigate = useNavigate();
 
   return (
-    <div className="relative w-full h-[60vh] overflow-hidden bg-bg">
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-      <div className="absolute -bottom-32 right-0 w-80 h-80 bg-primary-dark/15 rounded-full blur-3xl" />
+    <section className="relative min-h-[31rem] overflow-hidden border-b border-white/5 bg-[#111114] md:min-h-[38rem]">
 
       {movie.backdropUrl && (
         <img
           src={movie.backdropUrl}
           alt=""
-          className="absolute right-0 top-0 h-full w-2/3 object-cover opacity-90"
-          style={{ maskImage: "linear-gradient(to left, black 40%, transparent 100%)" }}
+          className="absolute right-0 top-0 h-full w-full object-cover opacity-75 md:w-[72%]"
+          style={{ maskImage: "linear-gradient(to right, transparent 0%, black 42%, black 100%)" }}
         />
       )}
 
-      <div className="relative z-10 h-full flex items-end pb-8 px-8 max-w-xl">
-        <div className="bg-surface/85 backdrop-blur-md rounded-2xl p-8 border border-edge shadow-lg">
-          <h1 className="font-display text-4xl font-bold mb-3 text-ink">{movie.title}</h1>
-          <p className="text-sm text-muted mb-4 line-clamp-3">{movie.description}</p>
+      <div className="page-width relative z-10 flex min-h-[31rem] items-end pb-12 md:min-h-[38rem] md:pb-20">
+        <div className="max-w-xl">
+          <p className="mb-4 text-xs font-bold uppercase tracking-[.3em] text-primary">Featured tonight</p>
+          <h1 className="mb-4 font-display text-4xl font-extrabold leading-[1.05] text-white md:text-6xl">{movie.title}</h1>
+          <p className="mb-6 max-w-lg text-sm leading-6 text-white/65 line-clamp-3">{movie.description || 'A story worth staying up for.'}</p>
+          <div className="mb-7 flex items-center gap-4 text-xs text-white/65"><span className="text-primary">★ {movie.averageRating?.toFixed(1) ?? 'N/A'}</span><span>{movie.releaseYear}</span><span>{movie.durationMinutes} min</span></div>
           <div className="flex gap-3">
             <button
               onClick={() => navigate(`/movies/${movie.tmdbId}`)}
-              className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-full font-semibold transition"
+              className="rounded bg-primary px-6 py-3 text-sm font-bold text-black transition hover:bg-white"
             >
               ▶ Play
             </button>
             <button
               onClick={() => navigate(`/movies/${movie.tmdbId}`)}
-              className="bg-bg border border-edge hover:border-primary text-ink px-6 py-2.5 rounded-full font-semibold transition"
+              className="rounded border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:border-primary hover:text-primary"
             >
               More Info
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
