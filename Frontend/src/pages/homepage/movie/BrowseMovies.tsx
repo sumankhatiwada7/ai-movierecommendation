@@ -7,18 +7,22 @@ import { fetchGenres } from '../../../api/genreapi';
 export default function BrowseMovies() {
   const [searchParams, setSearchParams] = useSearchParams();
   const genreId = searchParams.get('genreId') || '';
-  const sortBy = (searchParams.get('sortBy') as 'latest' | 'rating') || 'latest';
+  const ratingMin = searchParams.get('ratingMin') || '';
+  const view = searchParams.get('view') || 'trending';
+  const sortBy = view === 'trending' ? 'rating' : 'latest';
   const page = Number(searchParams.get('page')) || 1;
 
   const [movies, setMovies] = useState<Movie[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [draftGenreId, setDraftGenreId] = useState(genreId);
+  const [draftRatingMin, setDraftRatingMin] = useState(ratingMin);
 
   useEffect(() => {
     fetchGenres()
       .then((data) => {
-        const genresArray = Array.isArray(data) ? data : data?.genres || [];
+        const genresArray = Array.isArray(data) ? data : [];
         setGenres(genresArray);
       })
       .catch((error) => {
@@ -30,22 +34,19 @@ export default function BrowseMovies() {
   // Fetch movies whenever filters change
   useEffect(() => {
     setIsLoading(true);
-    fetchmovies({ page, genreId: genreId || undefined, sortBy })
+    fetchmovies({ page, genreId: genreId || undefined, sortBy, ratingMin: ratingMin || undefined })
       .then((data) => {
         setMovies(data.movies);
         setPagination(data.pagination);
       })
       .catch((error) => console.error('Failed to fetch movies:', error))
       .finally(() => setIsLoading(false));
-  }, [page, genreId, sortBy]);
+  }, [page, genreId, sortBy, ratingMin]);
 
-  const updateParam = (key: string, value: string) => {
-    const next = new URLSearchParams(searchParams);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    next.set('page', '1'); // reset to page 1 whenever a filter changes
-    setSearchParams(next);
-  };
+  useEffect(() => {
+    setDraftGenreId(genreId);
+    setDraftRatingMin(ratingMin);
+  }, [genreId, ratingMin]);
 
   const goToPage = (newPage: number) => {
     const next = new URLSearchParams(searchParams);
@@ -53,15 +54,57 @@ export default function BrowseMovies() {
     setSearchParams(next);
   };
 
-  return (
-    <div className="bg-black min-h-screen text-white p-6">
-      <h1 className="text-2xl font-semibold mb-6">Browse Movies</h1>
+  const changeView = (nextView: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('view', nextView);
+    next.set('page', '1');
+    setSearchParams(next);
+  };
 
-      <div className="flex flex-wrap gap-4 mb-6">
+  const applyFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    if (draftGenreId) next.set('genreId', draftGenreId);
+    else next.delete('genreId');
+    if (draftRatingMin) next.set('ratingMin', draftRatingMin);
+    else next.delete('ratingMin');
+    next.set('page', '1');
+    setSearchParams(next);
+  };
+
+  const viewLabels: Record<string, string> = {
+    trending: 'Trending',
+    latest: 'New releases',
+    tv: 'TV shows',
+    anime: 'Anime',
+  };
+
+  return (
+    <div className="hotflix-shell min-h-screen pb-16 pt-10 text-white">
+      <div className="page-width">
+      <p className="mb-2 text-xs font-bold uppercase tracking-[.25em] text-primary">The catalog</p>
+      <h1 className="mb-12 font-display text-4xl font-medium">Catalog</h1>
+
+      <div className="mb-8 flex gap-7 border-b border-white/10 text-xs font-bold uppercase tracking-[.12em] text-muted">
+        {Object.entries(viewLabels).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => changeView(key)}
+            className={`relative pb-4 transition hover:text-white ${
+              view === key
+                ? 'text-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:bg-primary'
+                : ''
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-8 flex flex-wrap items-center gap-3 border-b border-white/10 pb-7">
         <select
-          value={genreId}
-          onChange={(e) => updateParam('genreId', e.target.value)}
-          className="bg-gray-800 rounded px-3 py-2 text-sm"
+          value={draftGenreId}
+          onChange={(e) => setDraftGenreId(e.target.value)}
+          className="hotflix-input !w-auto !rounded !bg-surface text-sm"
         >
           <option value="">All Genres</option>
           {/* Safe guard: ensure genres is an array before mapping */}
@@ -74,66 +117,79 @@ export default function BrowseMovies() {
         </select>
 
         <select
-          value={sortBy}
-          onChange={(e) => updateParam('sortBy', e.target.value)}
-          className="bg-gray-800 rounded px-3 py-2 text-sm"
+          value={draftRatingMin}
+          onChange={(e) => setDraftRatingMin(e.target.value)}
+          className="hotflix-input !w-auto !rounded !bg-surface text-sm"
+          aria-label="Minimum rating"
         >
-          <option value="latest">Latest</option>
-          <option value="rating">Top Rated</option>
+          <option value="">Any rating</option>
+          <option value="8">8+ rating</option>
+          <option value="7">7+ rating</option>
+          <option value="6">6+ rating</option>
         </select>
+
+        <button
+          type="button"
+          onClick={applyFilters}
+          className="ml-auto rounded border border-primary px-8 py-3 text-xs font-bold uppercase tracking-wider text-primary transition hover:bg-primary hover:text-black"
+        >
+          Apply
+        </button>
+
       </div>
 
       {isLoading ? (
-        <p className="text-gray-400">Loading...</p>
+        <p className="text-muted">Loading the catalog...</p>
       ) : movies.length === 0 ? (
-        <p className="text-gray-400">No movies found.</p>
+        <p className="text-muted">No movies found.</p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7">
           {movies.map((movie) => (
             <Link
               to={`/movies/${movie.tmdbId}`}
               key={movie.tmdbId}
-              className="hover:scale-105 transition-transform"
+              className="group transition-transform"
             >
               {movie.posterUrl ? (
                 <img
                   src={movie.posterUrl}
                   alt={movie.title}
-                  className="rounded w-full h-60 object-cover"
+                  className="aspect-[2/3] w-full rounded-md object-cover transition group-hover:-translate-y-1"
                 />
               ) : (
-                <div className="w-full h-60 bg-gray-800 rounded flex items-center justify-center text-sm text-gray-400">
+                <div className="flex aspect-[2/3] w-full items-center justify-center rounded-md bg-surface text-sm text-muted">
                   No image
                 </div>
               )}
-              <p className="mt-2 text-sm font-medium truncate">{movie.title}</p>
-              <p className="text-xs text-gray-400">⭐ {movie.averageRating.toFixed(1)}</p>
+              <p className="mt-3 truncate text-sm font-semibold">{movie.title}</p>
+              <p className="pt-1 text-xs text-muted"><span className="text-primary">★</span> {movie.averageRating.toFixed(1)}</p>
             </Link>
           ))}
         </div>
       )}
 
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex gap-2 justify-center mt-8">
+        <div className="mt-12 flex justify-center gap-3">
           <button
             disabled={page <= 1}
             onClick={() => goToPage(page - 1)}
-            className="px-3 py-1 border border-gray-600 rounded disabled:opacity-40"
+            className="rounded border border-edge px-4 py-2 text-sm transition hover:border-primary disabled:opacity-40"
           >
             Prev
           </button>
-          <span className="px-2 py-1 text-sm text-gray-300">
+          <span className="px-2 py-2 text-sm text-muted">
             Page {pagination.page} of {pagination.totalPages}
           </span>
           <button
             disabled={page >= pagination.totalPages}
             onClick={() => goToPage(page + 1)}
-            className="px-3 py-1 border border-gray-600 rounded disabled:opacity-40"
+            className="rounded border border-edge px-4 py-2 text-sm transition hover:border-primary disabled:opacity-40"
           >
             Next
           </button>
         </div>
       )}
+      </div>
     </div>
   );
 }

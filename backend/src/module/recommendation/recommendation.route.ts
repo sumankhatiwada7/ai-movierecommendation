@@ -1,11 +1,11 @@
-import {authorize,authenticate} from "../auth/auth.middleware";
+import {authenticate, activeSubscription} from "../auth/auth.middleware";
 import { Router } from "express";
 import{recommendation,similarMovies} from "./recommendation.controller";
 
 const router = Router();
 
-router.get('/', authenticate, recommendation);
-router.get('/similar', authenticate, similarMovies);
+router.get('/', authenticate, activeSubscription, recommendation);
+router.get('/similar', authenticate, activeSubscription, similarMovies);
 
 
 export default router;

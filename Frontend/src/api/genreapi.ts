@@ -3,5 +3,5 @@ import type{Genre } from "../type/movie.type"
 
 export const fetchGenres = async (): Promise<Genre[]> => {
     const response = await api.get('/movies/genres');
-    return response.data;
+    return Array.isArray(response.data) ? response.data : response.data.genres ?? [];
 }

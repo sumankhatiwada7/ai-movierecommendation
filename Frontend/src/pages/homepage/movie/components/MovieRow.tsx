@@ -9,7 +9,7 @@ interface MovieRowProps {
 }
 
 export default function MovieRow({ title, movies, progressMap = {} }: MovieRowProps) {
-  const [scrollPosition, setScrollPosition] = useState(0);
+  const [, setScrollPosition] = useState(0);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,18 +47,14 @@ export default function MovieRow({ title, movies, progressMap = {} }: MovieRowPr
   }, [movies]);
 
   return (
-    <div className="relative group/row mb-8">
-      {/* Title */}
-      <h2 className="text-2xl font-bold mb-3 px-6 text-white hover:text-red-600 transition-colors duration-200">
-        {title}
-      </h2>
+    <section className="group/row relative mb-10">
+      <div className="page-width section-heading"><h2>{title}</h2><span className="text-xs text-muted">{movies.length} titles</span></div>
 
       {/* Navigation Arrows */}
       {showLeftArrow && (
         <button
           onClick={() => scroll("left")}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 
-                     text-white p-3 rounded-r-md transition-all duration-200 
+          className="absolute left-2 top-[45%] z-10 -translate-y-1/2 rounded-full border border-white/10 bg-black/70 p-2 text-white transition-all duration-200 
                      opacity-0 group-hover/row:opacity-100 hover:scale-110
                      backdrop-blur-sm border border-white/10"
           aria-label="Scroll left"
@@ -72,8 +68,7 @@ export default function MovieRow({ title, movies, progressMap = {} }: MovieRowPr
       {showRightArrow && (
         <button
           onClick={() => scroll("right")}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 
-                     text-white p-3 rounded-l-md transition-all duration-200 
+          className="absolute right-2 top-[45%] z-10 -translate-y-1/2 rounded-full border border-white/10 bg-black/70 p-2 text-white transition-all duration-200 
                      opacity-0 group-hover/row:opacity-100 hover:scale-110
                      backdrop-blur-sm border border-white/10"
           aria-label="Scroll right"
@@ -88,7 +83,7 @@ export default function MovieRow({ title, movies, progressMap = {} }: MovieRowPr
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex gap-3 overflow-x-auto px-6 pb-4 scrollbar-hide
+        className="page-width flex gap-4 overflow-x-auto pb-4 scrollbar-hide
                    scroll-smooth snap-x snap-mandatory"
         style={{
           scrollbarWidth: "none",
@@ -98,7 +93,7 @@ export default function MovieRow({ title, movies, progressMap = {} }: MovieRowPr
         {movies.map((movie) => (
           <div
             key={movie.tmdbId}
-            className="flex-shrink-0 w-48 snap-start"
+            className="w-[145px] flex-shrink-0 snap-start sm:w-[175px] md:w-[190px]"
           >
             <MovieCard
               movie={movie}
@@ -110,8 +105,6 @@ export default function MovieRow({ title, movies, progressMap = {} }: MovieRowPr
       </div>
 
       {/* Gradient Fade Effects */}
-      <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-black to-transparent pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-black to-transparent pointer-events-none" />
-    </div>
+    </section>
   );
 }

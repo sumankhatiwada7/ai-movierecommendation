@@ -7,8 +7,6 @@ import type { Movie } from '../../../type/movie.type';
 import SimilarMovies from './components/similarMovies';
 
 // Available VidCore servers – try these if one is slow
-const VIDCORE_SERVERS = ['auto', 'server1', 'server2', 'server3', 'server4'];
-
 export default function MovieDetail() {
   const { id } = useParams<{ id: string }>();
   const [movie, setMovie] = useState<Movie | null>(null);
@@ -29,18 +27,6 @@ export default function MovieDetail() {
   const currentTimeRef = useRef<number>(0);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // ----- Load saved time from backend -----
-  const loadSavedTime = useCallback(async () => {
-    if (!isValidTmdbId) return;
-    try {
-      const time = await getWatchProgress(tmdbId);
-      setSavedTime(time);
-      currentTimeRef.current = time;
-    } catch (error) {
-      console.warn('Failed to load watch progress:', error);
-    }
-  }, [tmdbId, isValidTmdbId]);
 
   // ----- Save current time to backend (debounced) -----
   const saveTime = useCallback(async (time: number) => {
@@ -238,24 +224,21 @@ export default function MovieDetail() {
 
   // ----- Main render -----
   return (
-    <div className="bg-bg text-ink min-h-screen">
-      {/* Hero Section */}
-      <div className="relative w-full h-[60vh] overflow-hidden bg-bg">
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-32 right-0 w-80 h-80 bg-primary-dark/15 rounded-full blur-3xl" />
-
+    <div className="hotflix-shell min-h-screen text-ink">
+      {/* Detail header */}
+      <div className="relative min-h-[34rem] w-full overflow-hidden bg-[#111114]">
         {movie.backdropUrl && (
           <img
             src={movie.backdropUrl}
             alt=""
-            className="absolute right-0 top-0 h-full w-2/3 object-cover opacity-90"
-            style={{ maskImage: "linear-gradient(to left, black 40%, transparent 100%)" }}
+            className="absolute right-0 top-0 h-full w-full object-cover opacity-65 md:w-[70%]"
+            style={{ maskImage: "linear-gradient(to right, transparent 0%, black 45%, black 100%)" }}
           />
         )}
 
-        <div className="absolute inset-0 flex items-end pb-12 px-6 md:px-12">
-          <div className="max-w-6xl mx-auto w-full flex flex-col md:flex-row gap-6 items-start">
-            <div className="flex-shrink-0 w-48 md:w-64 rounded-xl overflow-hidden shadow-lg border border-edge bg-surface">
+        <div className="page-width absolute inset-0 flex items-end pb-12 pt-12">
+          <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-6 md:flex-row">
+            <div className="w-40 flex-shrink-0 overflow-hidden rounded-md border border-white/10 bg-surface shadow-2xl md:w-56">
               {movie.posterUrl ? (
                 <img
                   src={movie.posterUrl}
@@ -269,8 +252,9 @@ export default function MovieDetail() {
               )}
             </div>
 
-            <div className="flex-1 space-y-3 bg-surface/85 backdrop-blur-md rounded-2xl p-6 border border-edge shadow-md">
-              <h1 className="font-display text-3xl md:text-5xl font-bold leading-tight text-ink">
+            <div className="flex-1 space-y-3 rounded-md border border-white/10 bg-black/35 p-6 backdrop-blur-md">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[.25em] text-primary">Movie details</p>
+              <h1 className="font-display text-3xl font-extrabold leading-tight text-white md:text-5xl">
                 {movie.title}
               </h1>
               <p className="text-sm text-muted">
@@ -284,7 +268,7 @@ export default function MovieDetail() {
                 {(movie.genres ?? []).map((g) => (
                   <span
                     key={g.id}
-                    className="text-xs font-medium px-3 py-1 bg-primary/10 text-primary-dark rounded-full border border-primary/20"
+                    className="rounded border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
                   >
                     {g.name}
                   </span>
@@ -305,7 +289,7 @@ export default function MovieDetail() {
                       setShowTimeoutMessage(true);
                     }, 15000);
                   }}
-                  className="mt-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-full font-semibold transition"
+                  className="mt-2 rounded bg-primary px-6 py-3 font-bold text-black transition hover:bg-white"
                 >
                   ▶ Watch Full Movie
                 </button>
@@ -317,8 +301,8 @@ export default function MovieDetail() {
 
       {/* Player Section */}
       {showPlayer ? (
-        <div className="max-w-4xl mx-auto px-4 -mt-12 relative z-10">
-          <div className="bg-surface backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-edge aspect-video relative">
+        <div className="page-width relative z-10 mx-auto -mt-10">
+          <div className="relative aspect-video overflow-hidden rounded-md border border-white/10 bg-black shadow-2xl">
             {!playerReady && (
               <div className="absolute inset-0 flex items-center justify-center bg-surface/80 z-10 flex-col gap-3">
                 <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -370,7 +354,7 @@ export default function MovieDetail() {
               className={playerReady ? 'opacity-100' : 'opacity-0'}
             />
           </div>
-          <div className="text-center mt-4 flex gap-4 justify-center items-center">
+          <div className="mt-4 flex items-center justify-center gap-4 text-center">
             <button
               onClick={handleClosePlayer}
               className="text-sm text-muted hover:text-primary transition"
@@ -385,7 +369,7 @@ export default function MovieDetail() {
       ) : (
         movie.trailerKey && (
           <div className="max-w-4xl mx-auto px-4 -mt-12 relative z-10">
-            <div className="bg-surface backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-edge">
+            <div className="overflow-hidden rounded-md border border-white/10 bg-black shadow-2xl">
               <iframe
                 className="w-full aspect-video"
                 src={`https://www.youtube.com/embed/${movie.trailerKey}`}
@@ -398,7 +382,8 @@ export default function MovieDetail() {
       )}
 
       {/* Similar Movies */}
-      <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="page-width mx-auto py-12">
+        <h2 className="mb-6 font-display text-3xl font-extrabold text-white">Discover</h2>
         <SimilarMovies title={movie.title} />
       </div>
     </div>

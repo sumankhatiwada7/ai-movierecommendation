@@ -49,6 +49,7 @@ export interface ListMoviesParams {
    search?: string;
   genreId?: string;
   sortBy?: "latest" | "rating";
+  ratingMin?: string;
 
 }
 export interface recommendationdata{

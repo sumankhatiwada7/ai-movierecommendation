@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { fetchmovies } from '../../../api/movieapi';
 import type { Movie } from "../../../type/movie.type";
 import MovieRow from "./components/MovieRow";
-import HeroBanner from "./components/HeroBanner";
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -26,15 +25,18 @@ export default function SearchResults() {
 }, [query]);
 
   return (
-    <div className="bg-black min-h-screen text-white pt-6 pb-12">
-      <h1 className="text-xl font-semibold px-6 mb-4">
+    <div className="hotflix-shell min-h-screen pb-16 pt-12 text-white">
+      <div className="page-width">
+      <p className="mb-2 text-xs font-bold uppercase tracking-[.25em] text-primary">Search</p>
+      <h1 className="mb-10 font-display text-3xl font-extrabold">
         {isLoading ? "Searching..." : `Results for "${query}"`}
       </h1>
       {!isLoading && movies.length === 0 && (
-        <p className="px-6 text-gray-400">No movies found.</p>
+        <p className="text-muted">No movies found for this search.</p>
       )}
-      {movies.length > 0 && <MovieRow title="Search Results" movies={movies} />}
+      {movies.length > 0 && <MovieRow title="Search results" movies={movies} />}
      
+      </div>
     </div>
   );
 }

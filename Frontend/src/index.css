@@ -1,16 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #0F1B16;
-  --color-surface: #182922;
-  --color-primary: #C9A24B;
-  --color-primary-dark: #A9822F;
-  --color-ink: #EDE8DC;
-  --color-muted: #7C9188;
-  --color-edge: #24382F;
+  --color-bg: #111114;
+  --color-surface: #1b1b20;
+  --color-primary: #f5b51b;
+  --color-primary-dark: #d99408;
+  --color-ink: #f5f5f5;
+  --color-muted: #97979f;
+  --color-edge: #303037;
 
-  --font-display: "Sora", sans-serif;
-  --font-sans: "Inter", sans-serif;
+  --font-display: "Manrope", sans-serif;
+  --font-sans: "DM Sans", sans-serif;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -27,4 +28,34 @@
 body {
   background-color: var(--color-bg);
   color: var(--color-ink);
+  font-family: var(--font-sans);
+  margin: 0;
+  min-width: 320px;
+}
+
+button, a, input, select { font: inherit; }
+a { text-decoration: none; }
+
+.hotflix-shell {
+  background: radial-gradient(circle at 85% 0%, rgba(245, 181, 27, .055), transparent 28rem), var(--color-bg);
+  min-height: 100vh;
+}
+
+.page-width { max-width: 1320px; margin: 0 auto; padding-left: 5.5vw; padding-right: 5.5vw; }
+
+.section-heading {
+  align-items: baseline; display: flex; justify-content: space-between; margin: 0 0 1.3rem;
+}
+.section-heading h2 { font-family: var(--font-display); font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 800; margin: 0; }
+.section-heading h2::first-letter { color: var(--color-primary); }
+.section-heading a { color: var(--color-primary); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+
+.hotflix-input {
+  background: #24242a; border: 1px solid transparent; border-radius: 5px; color: var(--color-ink); outline: none;
+  padding: .72rem .9rem; transition: border-color .2s, background .2s; width: 100%;
+}
+.hotflix-input:focus { background: #29292f; border-color: var(--color-primary); }
+
+@media (max-width: 700px) {
+  .page-width { padding-left: 1rem; padding-right: 1rem; }
 }

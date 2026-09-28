@@ -34,7 +34,7 @@ export const Register = () => {
         password: form.password,
         role: form.role,
       });
-      toast.success("Account created! Please log in.");
+      toast.success("Account created! Please log in, then choose a plan to continue.");
       navigate("/login");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "An error occurred while registering");
@@ -44,13 +44,14 @@ export const Register = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg">
+    <div className="hotflix-shell flex min-h-screen items-center justify-center px-4 py-10">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-2xl bg-surface border border-edge p-8 shadow-lg"
+        className="w-full max-w-md rounded-md border border-white/10 bg-surface p-8 shadow-2xl md:p-10"
       >
-        <h1 className="font-display mb-6 text-center text-3xl font-bold text-ink">
-          Create Account
+        <div className="mb-8 text-center"><div className="font-display text-3xl font-extrabold text-primary">HOT<span className="text-white">FLIX</span></div><p className="mt-3 text-sm text-muted">Make room for better movie nights.</p></div>
+        <h1 className="font-display mb-6 text-xl font-bold text-white">
+          Create your account
         </h1>
 
         <div className="mb-4">
@@ -60,7 +61,7 @@ export const Register = () => {
             type="text"
             value={form.name}
             onChange={handleChange}
-            className="w-full rounded-lg border border-edge bg-bg p-2 text-ink outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+            className="hotflix-input"
             required
           />
         </div>
@@ -72,7 +73,7 @@ export const Register = () => {
             type="email"
             value={form.email}
             onChange={handleChange}
-            className="w-full rounded-lg border border-edge bg-bg p-2 text-ink outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+            className="hotflix-input"
             required
           />
         </div>
@@ -84,7 +85,7 @@ export const Register = () => {
             type="password"
             value={form.password}
             onChange={handleChange}
-            className="w-full rounded-lg border border-edge bg-bg p-2 text-ink outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+            className="hotflix-input"
             required
           />
         </div>
@@ -96,7 +97,7 @@ export const Register = () => {
             type="password"
             value={form.confirmpassword}
             onChange={handleChange}
-            className="w-full rounded-lg border border-edge bg-bg p-2 text-ink outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+            className="hotflix-input"
             required
           />
         </div>
@@ -104,7 +105,7 @@ export const Register = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-primary py-2.5 font-semibold text-bg hover:bg-primary-dark disabled:opacity-50 transition"
+          className="w-full rounded bg-primary py-3 font-bold text-black transition hover:bg-white disabled:opacity-50"
         >
           {loading ? "Creating Account..." : "Register"}
         </button>

@@ -4,15 +4,16 @@ import type { movielistresponse, movieresponse, movieapiresponse } from "./movie
 
 export async function listMovies(req: Request, res: Response) {
     try {
-        const query = req.query as { page?: string; genreId?: string; sortBy?: string; search?: string };
+        const query = req.query as { page?: string; genreId?: string; sortBy?: string; ratingMin?: string; search?: string };
         const page = Number(query.page) > 0 ? Number(query.page) : 1;
         const genreId = query.genreId ? Number(query.genreId) : undefined;
         const sortBy = query.sortBy === "rating" ? "rating" : "latest";
+        const ratingMin = query.ratingMin ? Number(query.ratingMin) : undefined;
 
         const tmdb = new TmdbService();
         const result = query.search
             ? await tmdb.searchMovies(query.search, page)
-            : await tmdb.discoverMovies(page, genreId, sortBy);
+            : await tmdb.discoverMovies(page, genreId, sortBy, Number.isFinite(ratingMin) ? ratingMin : undefined);
 
         const payload: movielistresponse<typeof result.movie[number]> = {
             message: "Movies fetched successfully",

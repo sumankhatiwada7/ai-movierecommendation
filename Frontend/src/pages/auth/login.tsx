@@ -31,7 +31,7 @@ export default function Login() {
         email: form.email,
         password: form.password,
       });
-      toast.success("Welcome back!");
+      toast.success("Welcome back! Choose a plan to continue.");
       navigate("/");
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Login failed.");
@@ -41,20 +41,21 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg">
+    <div className="hotflix-shell flex min-h-screen items-center justify-center px-4 py-10">
       <form
         onSubmit={handlesubmit}
-        className="w-full max-w-md space-y-4 rounded-2xl bg-surface border border-edge p-8 shadow-lg"
+        className="w-full max-w-md space-y-5 rounded-md border border-white/10 bg-surface p-8 shadow-2xl md:p-10"
       >
-        <h1 className="font-display text-3xl font-bold text-center text-ink">
-          Login
+        <div className="mb-8 text-center"><div className="font-display text-3xl font-extrabold text-primary">HOT<span className="text-white">FLIX</span></div><p className="mt-3 text-sm text-muted">Welcome back. Your next story is waiting.</p></div>
+        <h1 className="font-display text-xl font-bold text-white">
+          Sign in
         </h1>
 
         <div>
           <label className="mb-1 block text-sm text-muted">Email</label>
           <input
             type="email"
-            className="w-full rounded-lg border border-edge bg-bg p-2 text-ink outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+            className="hotflix-input"
             name="email"
             value={form.email}
             onChange={handlechange}
@@ -65,7 +66,7 @@ export default function Login() {
           <label className="mb-1 block text-sm text-muted">Password</label>
           <input
             type="password"
-            className="w-full rounded-lg border border-edge bg-bg p-2 text-ink outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+            className="hotflix-input"
             name="password"
             value={form.password}
             onChange={handlechange}
@@ -74,7 +75,7 @@ export default function Login() {
 
         <button
           disabled={loading}
-          className="w-full rounded-full bg-primary py-2.5 font-semibold text-bg hover:bg-primary-dark disabled:opacity-50 transition"
+          className="w-full rounded bg-primary py-3 font-bold text-black transition hover:bg-white disabled:opacity-50"
         >
           {loading ? "Logging in..." : "Login"}
         </button>

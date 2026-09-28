@@ -52,13 +52,13 @@ export default function MovieCard({ movie, showProgress = false, progress = 0 }:
 
   return (
     <Link to={`/movies/${movie.tmdbId}`} className="block group relative">
-      <div className="relative rounded-lg overflow-hidden shadow-lg transition-transform duration-300 hover:scale-105 hover:z-10">
+      <div className="relative overflow-hidden rounded-md bg-surface shadow-lg transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_14px_30px_rgba(0,0,0,.4)]">
         {/* Poster */}
         {movie.posterUrl ? (
           <img
             src={movie.posterUrl}
             alt={movie.title}
-            className="w-full h-auto aspect-[2/3] object-cover"
+            className="aspect-[2/3] w-full object-cover"
             loading="lazy"
           />
         ) : (
@@ -77,7 +77,7 @@ export default function MovieCard({ movie, showProgress = false, progress = 0 }:
         )}
 
         {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/10 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
           <h3 className="text-white font-semibold text-sm line-clamp-2">{movie.title}</h3>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-yellow-400 text-xs">⭐ {movie.averageRating?.toFixed(1) ?? 'N/A'}</span>
@@ -92,8 +92,8 @@ export default function MovieCard({ movie, showProgress = false, progress = 0 }:
         <button
           onClick={handleToggle}
           disabled={toggling}
-          className={`absolute top-2 right-2 p-1.5 rounded-full bg-black/50 backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
-            inWatchlist ? 'text-yellow-400' : 'text-white/60 hover:text-yellow-400'
+          className={`absolute right-2 top-2 rounded-full bg-black/55 p-1.5 backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
+            inWatchlist ? 'text-primary' : 'text-white/70 hover:text-primary'
           } ${isFull && !inWatchlist ? 'opacity-50 cursor-not-allowed' : ''}`}
           aria-label={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
           title={isFull && !inWatchlist ? 'Watchlist is full (max 5)' : ''}
@@ -131,8 +131,8 @@ export default function MovieCard({ movie, showProgress = false, progress = 0 }:
         )}
       </div>
 
-      <p className="mt-2 text-sm font-medium text-ink truncate px-1">{movie.title}</p>
-      <p className="text-xs text-yellow-400 px-1">⭐ {movie.averageRating?.toFixed(1) ?? 'N/A'}</p>
+      <p className="mt-3 truncate px-0.5 text-sm font-semibold text-white">{movie.title}</p>
+      <p className="px-0.5 pt-1 text-xs text-muted"><span className="text-primary">★</span> {movie.averageRating?.toFixed(1) ?? 'N/A'} <span className="px-1 text-white/20">·</span> {movie.releaseYear || '—'}</p>
     </Link>
   );
 }

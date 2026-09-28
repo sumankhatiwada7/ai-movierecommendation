@@ -1,6 +1,6 @@
 import { useEffect, useState ,useRef} from 'react';
 import { useWatchlist } from '../../../../context/watchlistcontext';
-import { getwatchlist, removefromwatchlist } from '../../../../api/watchlistapi';
+import { getwatchlist } from '../../../../api/watchlistapi';
 import type { Movie } from '../../../../type/movie.type';
 import MovieCard from './MovieCard';
 import { Link } from 'react-router-dom';
