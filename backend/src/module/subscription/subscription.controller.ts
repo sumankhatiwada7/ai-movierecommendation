@@ -28,6 +28,7 @@ export async function getSubscriptionPlans(req:Request,res:Response){
     return res.status(200).json(payload);
     }
     catch(error){
+        console.error("Checkout session creation failed:", error);
         const payload:apiresponse={
             message:"Internal server error",
             success:false
@@ -184,7 +185,7 @@ try{
                    userId,
                    amount: plan.price,
                    currency: "USD",
-                   status: session.payment_status as any,
+                   status: session.payment_status === "paid" ? "completed" : "pending",
                    providerPaymentId:paymentIntentId,
                   }
                 });

@@ -89,7 +89,6 @@ export async function activeSubscription(req: AuthenticatedRequest, res: Respons
     try {
         const userId = req.user?.id;
         if (!userId) return res.status(401).json({ message: "Authentication required", sucess: false });
-
         const subscription = await prisma.subscription.findFirst({
             where: { userId, status: "active", endDate: { gt: new Date() } },
             select: { id: true },
