@@ -94,8 +94,8 @@ async createcheckoutSession(userId:string,planId:string){
     metadata:{
         userId:userId,
         planId:planId,},
-    success_url:`${process.env.FRONTEND_URL}/subscription/success`,
-    cancel_url:`${process.env.FRONTEND_URL}/subscription/cancel`,
+    success_url:`${process.env.FRONTEND_URL ?? process.env.CLIENT_URL}/subscription/success`,
+    cancel_url:`${process.env.FRONTEND_URL ?? process.env.CLIENT_URL}/subscription/cancel`,
 
 
 
