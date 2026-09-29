@@ -1,11 +1,13 @@
 import { prisma } from "../../core/database/prisma";
 import {archiveClient} from "../../core/player/player.client"
 import { getOrSetCache } from "../../core/redis/cache";
+import { redis } from "../../core/redis/redis.client";
+import { recommendationsCacheKey } from "../recommendation/recommendation.service";
 import type{archivematch} from './watch.type';
 
 export class watchservice{
     async logwatch(userId:string,tmdbId:number,title:string){
-        return prisma.watchhistory.upsert({
+        const history = await prisma.watchhistory.upsert({
             where:{
                 userId_tmdbId:{userId,tmdbId}
             },
@@ -15,7 +17,9 @@ export class watchservice{
             create:{
                 userId,tmdbId,title
             }
-        })
+        });
+        await redis.del(recommendationsCacheKey(userId, 10));
+        return history;
     }
     async getwatchprogress(userId:string,tmdbId:number,){
         return prisma.watchProgress.findUnique({

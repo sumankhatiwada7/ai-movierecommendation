@@ -14,6 +14,7 @@ const app = express();
 const port = Number(process.env.PORT ?? process.env.port ?? 3000);
 const clientUrl = process.env.CLIENT_URL ?? process.env.client_url;
 
+app.use("/api/v1/subscription/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

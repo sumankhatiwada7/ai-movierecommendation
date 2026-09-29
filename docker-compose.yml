@@ -48,6 +48,7 @@ services:
 
     volumes:
       - ./backend/src:/app/src
+      - ./backend/server.ts:/app/server.ts
       - ./backend/prisma:/app/prisma
       - backend_node_modules:/app/node_modules
 
