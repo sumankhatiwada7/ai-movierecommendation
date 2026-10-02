@@ -1,6 +1,5 @@
 import { prisma } from "../../core/database/prisma";
 import bcrypt from "bcrypt"
-import jwt from "jsonwebtoken"
 import  type  { userrequest } from "./auth.type";
 import  type  { Request,Response } from "express";
 import type{error} from "./auth.type";
@@ -20,21 +19,51 @@ export async function register(req: Request, res: Response){
     const name = data.name;
     const email = data.email;
     const password = data.password;
+    const confirmpassword = data.confirmpassword;
     const role: userrole = data.role === "admin" ? "admin" : "user";
     const errors: NonNullable<error<string>["errors"]> = [];
+    const fieldErrors: Record<string, string> = {};
     const emailregix="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+    const passwordregex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 
-    if(!name) errors.push("Name is required");
-    if(!new RegExp(emailregix).test(email)) errors.push("Email is invalid");
-    if(!password) errors.push("Password is required");
+    if(!name) {
+        const message = "Name is required";
+        errors.push(message);
+        fieldErrors.name = message;
+    }
+    if(!new RegExp(emailregix).test(email)) {
+        const message = "Email is invalid";
+        errors.push(message);
+        fieldErrors.email = message;
+    }
+    if(!password) {
+        const message = "Password is required";
+        errors.push(message);
+        fieldErrors.password = message;
+    } else if(!passwordregex.test(password)) {
+        const message = "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
+        errors.push(message);
+        fieldErrors.password = message;
+    }
+    if(!confirmpassword) {
+        const message = "Please confirm your password";
+        errors.push(message);
+        fieldErrors.confirmpassword = message;
+    } else if(password !== confirmpassword) {
+        const message = "Password and confirm password do not match";
+        errors.push(message);
+        fieldErrors.confirmpassword = message;
+    }
 
     if(!role) errors.push("Role is required");
+    
 
     if(errors.length>0){
         const payload: error<string> = {
             errors,
-            message: "Validation failed"
+            message: "Validation failed",
+            fieldErrors,
         }
         return res.status(400).json(payload)
     }
@@ -43,7 +72,8 @@ export async function register(req: Request, res: Response){
     if(user){
         const payload:userapiresponse = {
             message:"User already exists",
-            sucess:false
+            sucess:false,
+            fieldErrors: { email: "User already exists" }
         }
         return res.status(400).json(payload)
     }
@@ -75,15 +105,28 @@ export async function login (req:Request,res:Response){
     const email=data.email;
     const password=data.password;
     const errors: NonNullable<error<string>["errors"]> = [];
+    const fieldErrors: Record<string, string> = {};
     const emailregix="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-
-
-    if(!new RegExp(emailregix).test(email)) errors.push("Email is invalid");
-    if(!password) errors.push("Password is required");
+    const passwordregex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+    if(!new RegExp(emailregix).test(email)) {
+        const message = "Email is invalid";
+        errors.push(message);
+        fieldErrors.email = message;
+    }
+    if(!password) {
+        const message = "Password is required";
+        errors.push(message);
+        fieldErrors.password = message;
+    } else if(!passwordregex.test(password)) {
+        const message = "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
+        errors.push(message);
+        fieldErrors.password = message;
+    }
     if(errors.length>0){
         const payload:error<string>={
             errors,
-            message:"validation failed"
+            message:"validation failed",
+            fieldErrors
         }
         return res.status(400).json(payload)
     }
@@ -91,7 +134,8 @@ export async function login (req:Request,res:Response){
     if(!existinguser){
         const payload:userapiresponse={
             message:"User doesnt exist",
-            sucess:false
+            sucess:false,
+            fieldErrors: { email: "User doesnt exist" }
 
         }
         return res.status(404).json(payload)
@@ -100,7 +144,8 @@ export async function login (req:Request,res:Response){
    if(!matchpassword){
     const payload:userapiresponse={
         message:"Password is incorrect",
-        sucess:false
+        sucess:false,
+        fieldErrors: { password: "Password is incorrect" }
     }
     return res.status(400).json(payload)
 }
@@ -201,10 +246,12 @@ export async function refresh(req:Request,res:Response){
 export async function logout(Req:Request,Res:Response){
     try{
     const token = Req.cookies?.refreshtoken;
-    if(!token){
-
+    if(token){
+        const verifiedtoken = verfiyrefreshToken(token);
+        if(verifiedtoken){
+            await new AuthService().removeRefreshToken(verifiedtoken.id);
+        }
     }
-    await new AuthService().removeRefreshToken(token);
     Res.clearCookie("refreshtoken");
     const payload:userapiresponse={
         message:"Logout successful",

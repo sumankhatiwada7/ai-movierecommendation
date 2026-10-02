@@ -32,7 +32,7 @@ export default function Navbar() {
           to="/"
           className="font-display flex-shrink-0 text-3xl font-extrabold tracking-tight text-primary"
         >
-          HOT<span className="text-white">FLIX</span>
+          WATCH<span className="text-white">TV</span>
         </Link>
         <div className="hidden items-center gap-6 text-[.7rem] font-bold uppercase tracking-[.12em] text-muted md:flex">
           <Link to="/" className="transition hover:text-primary">Home</Link>

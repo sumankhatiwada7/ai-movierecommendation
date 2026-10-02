@@ -13,6 +13,7 @@ export default function Homepage() {
   const [watchHistory, setWatchHistory] = useState<Movie[]>([]);
   const [watchProgressMap, setWatchProgressMap] = useState<Record<number, number>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function Homepage() {
 
   useEffect(() => {
     let isMounted = true;
+    setIsLoadingHistory(true);
     Promise.all([
       getrecommendations().catch(() => ({ movies: [] as Movie[] })),
       getWatchHistory().catch(() => ({ movies: [] as Movie[] })),
@@ -57,6 +59,7 @@ export default function Homepage() {
       if (!isMounted) return;
       setRecommended(recommendationResponse.movies || []);
       setWatchHistory(watchHistoryResponse.movies || []);
+      setIsLoadingHistory(false);
     });
 
     return () => {
@@ -122,6 +125,16 @@ export default function Homepage() {
         <div className="pt-8 md:pt-10">
           <MovieRow title="Recommendations" movies={recommended} />
         </div>
+      )}
+      {!isLoadingHistory && watchHistory.length === 0 && (
+        <section className="page-width pb-8 pt-8 md:pt-10">
+          <div className="border border-primary/30 bg-primary/10 px-6 py-8 text-center sm:px-10">
+            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Find something to watch</h1>
+            <p className="mx-auto mt-3 max-w-lg text-muted">
+              Search for a movie above and watch it to start building your personal recommendations.
+            </p>
+          </div>
+        </section>
       )}
       {watchHistory.length > 0 && (
         <MovieRow title="Continue watching" movies={watchHistory} progressMap={watchProgressMap} />
