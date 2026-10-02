@@ -59,3 +59,7 @@ export async function createCheckoutSession(planId: string): Promise<string> {
   }
   return response.data.checkoutUrl;
 }
+
+export async function confirmCheckoutSession(sessionId: string): Promise<void> {
+  await api.post("/subscription/confirm", { sessionId });
+}

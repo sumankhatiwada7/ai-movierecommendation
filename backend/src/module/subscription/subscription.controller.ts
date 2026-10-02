@@ -113,6 +113,21 @@ export async function createCheckoutSession(req:AuthenticatedRequest,res:Respons
     }
 }
 
+export async function confirmCheckoutSession(req:AuthenticatedRequest,res:Response){
+    try{
+        const userId = req.user?.id;
+        const sessionId = req.body?.sessionId;
+        if(!userId || typeof sessionId !== "string" || !sessionId){
+            return res.status(400).json({ message:"Checkout session id is required", success:false });
+        }
+        await new subscriptionservice().confirmCheckoutSession(userId, sessionId);
+        return res.status(200).json({ message:"Payment confirmed successfully", success:true });
+    } catch(error){
+        console.error("Checkout confirmation failed:", error);
+        return res.status(400).json({ message:"Payment confirmation failed", success:false });
+    }
+}
+
 export async function handleStripeWebhook(req:Request,res:Response){
     
    const sig = req.headers['stripe-signature'] as string;

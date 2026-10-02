@@ -24,10 +24,7 @@ export class RecommendationService {
         const watchedTitles = watched.map((w) => w.title);
         const tmdb = new TmdbService();
 
-        if (watchedTitles.length === 0) {
-            const { movie:movies } = await tmdb.discoverMovies(1, undefined, "rating");
-            return movies.slice(0, topK);
-        }
+        if (watchedTitles.length === 0) return [];
 
         let mlData: mlListResponse;
         try {

@@ -9,6 +9,7 @@ export interface userrequest{
     name :string ;
     email :string ;
     password :string ;
+    confirmpassword?: string;
     role :Role ;
 }
 
@@ -34,9 +35,11 @@ export interface loginresponse<T>{
 export interface error<T>{
     message:string;
     errors:T[];
+    fieldErrors?: Record<string, string>;
 }
 
 export interface userapiresponse{
     message:string;
     sucess:boolean;
+    fieldErrors?: Record<string, string>;
 }

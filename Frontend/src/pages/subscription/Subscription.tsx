@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import {
   createCheckoutSession,
+  confirmCheckoutSession,
   getSubscriptionPlans,
   getUserSubscription,
   type SubscriptionPlan,
@@ -49,16 +50,16 @@ export default function Subscription() {
     <div className="hotflix-shell min-h-screen pb-20 text-white">
       <main className="page-width pt-12 md:pt-16">
         <div className="max-w-2xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[.28em] text-primary">HotFlix membership</p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-[.28em] text-primary">WatchTV membership</p>
           <h1 className="font-display text-4xl font-extrabold tracking-tight md:text-6xl">Choose your movie night.</h1>
-          <p className="mt-5 text-base leading-7 text-muted">Unlock the full HotFlix catalog with a simple, flexible pass.</p>
+          <p className="mt-5 text-base leading-7 text-muted">Unlock the full WatchTV catalog with a simple, flexible pass.</p>
         </div>
 
         {subscription && (
           <section className="mt-10 flex flex-col justify-between gap-5 rounded-md border border-primary/30 bg-primary/10 p-5 md:flex-row md:items-center">
             <div>
               <p className="text-xs font-bold uppercase tracking-[.2em] text-primary">Active subscription</p>
-              <h2 className="mt-2 font-display text-xl font-bold text-white">{subscription.plan?.name || "HotFlix plan"}</h2>
+              <h2 className="mt-2 font-display text-xl font-bold text-white">{subscription.plan?.name || "WatchTV plan"}</h2>
               <p className="mt-1 text-sm text-muted">Active until {formatDate(subscription.endDate)}</p>
             </div>
             <span className="rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-black">Active</span>
@@ -113,6 +114,17 @@ export default function Subscription() {
 export function SubscriptionResult() {
   const location = useLocation();
   const cancelled = location.pathname.endsWith("/cancel");
+  const sessionId = new URLSearchParams(location.search).get("session_id");
+  const [confirming, setConfirming] = useState(!cancelled && Boolean(sessionId));
+  const [confirmed, setConfirmed] = useState(false);
+
+  useEffect(() => {
+    if (cancelled || !sessionId) return;
+    confirmCheckoutSession(sessionId)
+      .then(() => setConfirmed(true))
+      .catch(() => toast.error("Payment received, but confirmation is still processing. Please check your subscription shortly."))
+      .finally(() => setConfirming(false));
+  }, [cancelled, sessionId]);
 
   return (
     <div className="hotflix-shell flex min-h-[calc(100vh-88px)] items-center justify-center px-4 text-center text-white">
@@ -120,10 +132,16 @@ export function SubscriptionResult() {
         <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full text-3xl ${cancelled ? "bg-white/10 text-muted" : "bg-primary text-black"}`}>
           {cancelled ? "×" : "✓"}
         </div>
-        <p className="mt-6 text-xs font-bold uppercase tracking-[.28em] text-primary">HotFlix membership</p>
-        <h1 className="mt-3 font-display text-4xl font-extrabold">{cancelled ? "Checkout cancelled" : "Welcome to HotFlix"}</h1>
+        <p className="mt-6 text-xs font-bold uppercase tracking-[.28em] text-primary">WatchTV membership</p>
+        <h1 className="mt-3 font-display text-4xl font-extrabold">{cancelled ? "Checkout cancelled" : "Welcome to WatchTV"}</h1>
         <p className="mt-4 leading-7 text-muted">
-          {cancelled ? "No payment was taken. You can return whenever you are ready." : "Your payment was received. Your subscription will appear here as soon as Stripe confirms it."}
+          {cancelled
+            ? "No payment was taken. You can return whenever you are ready."
+            : confirming
+              ? "Confirming your payment securely..."
+              : confirmed
+                ? "Your subscription is active. Enjoy WatchTV."
+                : "Your payment was received and is being confirmed. Please check your subscription shortly."}
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Link to="/" className="rounded bg-primary px-5 py-3 text-sm font-bold text-black transition hover:bg-white">Back to home</Link>

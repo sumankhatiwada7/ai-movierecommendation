@@ -4,6 +4,7 @@ export interface registerdata{
     name:string;
     email:string;
     password:string;
+    confirmpassword:string;
     role:string;
 }
 export interface logindata{
