@@ -1,6 +1,6 @@
 import { prisma } from "../../core/database/prisma";
 import bcrypt from "bcrypt"
-import  type  { userrequest } from "./auth.type";
+import  type { userrequest, forgotpasswordrequest } from "./auth.type";
 import  type  { Request,Response } from "express";
 import type{error} from "./auth.type";
 import type { userresponse,loginrequest,loginresponse } from "./auth.type";
@@ -186,6 +186,121 @@ export async function login (req:Request,res:Response){
     }
 }
 
+export async function forgotPassword(req: Request, res: Response) {
+    try {
+        const data = req.body as forgotpasswordrequest;
+        const email = data.email?.trim();
+        const oldPassword = data.oldPassword;
+        const newPassword = data.newPassword;
+        const confirmPassword = data.confirmPassword;
+        const errors: string[] = [];
+        const fieldErrors: Record<string, string> = {};
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+        if (!email || !emailRegex.test(email)) {
+            const message = "Email is invalid";
+            errors.push(message);
+            fieldErrors.email = message;
+        }
+        if (!oldPassword) {
+            const message = "Current password is required";
+            errors.push(message);
+            fieldErrors.oldPassword = message;
+        }
+        if (!newPassword) {
+            const message = "New password is required";
+            errors.push(message);
+            fieldErrors.newPassword = message;
+        } else if (!passwordRegex.test(newPassword)) {
+            const message = "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
+            errors.push(message);
+            fieldErrors.newPassword = message;
+        }
+        if (!confirmPassword) {
+            const message = "Please confirm your new password";
+            errors.push(message);
+            fieldErrors.confirmPassword = message;
+        } else if (newPassword !== confirmPassword) {
+            const message = "New password and confirmation do not match";
+            errors.push(message);
+            fieldErrors.confirmPassword = message;
+        }
+
+        if (errors.length > 0) {
+            return res.status(400).json({
+                message: "Validation failed",
+                errors,
+                fieldErrors,
+                sucess: false,
+            });
+        }
+
+        const user = await new AuthService().findUserByEmail(email);
+        if (!user) {
+            return res.status(404).json({
+                message: "User doesn't exist",
+                sucess: false,
+                fieldErrors: { email: "User doesn't exist" },
+            });
+        }
+
+        const currentPasswordMatches = await bcrypt.compare(oldPassword, user.password);
+        if (!currentPasswordMatches) {
+            return res.status(400).json({
+                message: "Current password is incorrect",
+                sucess: false,
+                fieldErrors: { oldPassword: "Current password is incorrect" },
+            });
+        }
+
+        if (oldPassword === newPassword) {
+            return res.status(400).json({
+                message: "New password must be different from your current password",
+                sucess: false,
+                fieldErrors: { newPassword: "Choose a different password" },
+            });
+        }
+
+        await new AuthService().updatePassword(user.id, await hashpassword(newPassword));
+        return res.status(200).json({
+            message: "Password updated successfully. Please log in with your new password.",
+            sucess: true,
+        });
+    } catch (error) {
+        console.error("Password update failed:", error);
+        return res.status(500).json({
+            message: "Internal server error",
+            sucess: false,
+        });
+    }
+}
+
+export async function checkUserEmail(req: Request, res: Response) {
+    try {
+        const email = (req.body?.email as string | undefined)?.trim();
+        if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+            return res.status(400).json({
+                message: "Enter a valid email address",
+                sucess: false,
+                fieldErrors: { email: "Enter a valid email address" },
+            });
+        }
+        const user = await new AuthService().findUserByEmail(email);
+        if (!user) {
+            return res.status(404).json({
+                message: "User doesn't exist",
+                sucess: false,
+                fieldErrors: { email: "User doesn't exist" },
+            });
+        }
+        return res.status(200).json({ message: "User found", sucess: true });
+    } catch (error) {
+        console.error("User lookup failed:", error);
+        return res.status(500).json({ message: "Internal server error", sucess: false });
+    }
+}
+
 export async function refresh(req:Request,res:Response){
     try{
     const token =req.cookies?.refreshtoken;
@@ -267,4 +382,3 @@ export async function logout(Req:Request,Res:Response){
         return Res.status(500).json(payload);
     }
 }
-

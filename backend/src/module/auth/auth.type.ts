@@ -26,6 +26,13 @@ export interface loginrequest{
     password:string;
 }
 
+export interface forgotpasswordrequest{
+    email:string;
+    oldPassword:string;
+    newPassword:string;
+    confirmPassword:string;
+}
+
 export interface loginresponse<T>{
     message :string ;
     sucess :boolean ;
