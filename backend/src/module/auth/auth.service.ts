@@ -41,6 +41,19 @@ async updateRefreshToken(id: string, refreshtoken: string) {
         },
     });
 }
+
+async updatePassword(id: string, password: string) {
+    return await prisma.user.update({
+        where: {
+            id,
+        },
+        data: {
+            password,
+            refreshtoken: "",
+        },
+    });
+}
+
 async removeRefreshToken(id: string) {
     return await prisma.user.update({
         where: {

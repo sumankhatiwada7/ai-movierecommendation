@@ -114,6 +114,12 @@ export default function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
+        <p className="text-center text-sm">
+          <Link to="/forgot-password" className="text-primary hover:text-white hover:underline">
+            Forgot password?
+          </Link>
+        </p>
+
         <p className="text-center text-sm text-muted">
           Don't have an account?{" "}
           <Link to="/register" className="text-primary hover:text-primary-dark hover:underline">
