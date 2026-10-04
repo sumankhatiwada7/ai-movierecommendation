@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Login from "./pages/auth/login";
 import Register from "./pages/auth/register";
+import ForgotPassword from "./pages/auth/forgotpassword";
 import Homepage from "./pages/homepage/movie/homepage";
 import Moviedetail from "./pages/homepage/movie/moviedetail";
 import BrowseMovies from "./pages/homepage/movie/BrowseMovies";
@@ -17,7 +18,7 @@ function AppRoutes() {
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
 
-  if (user && (location.pathname === "/login" || location.pathname === "/register")) {
+  if (user && (location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password")) {
     return <Navigate to="/" replace />;
   }
 
@@ -31,6 +32,10 @@ function AppRoutes() {
         <Route
           path="/register"
           element={user ? <Navigate to="/" replace /> : <Register />}
+        />
+        <Route
+          path="/forgot-password"
+          element={user ? <Navigate to="/" replace /> : <ForgotPassword />}
         />
         <Route
           path="/"
